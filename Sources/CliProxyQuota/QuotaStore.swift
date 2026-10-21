@@ -9,6 +9,7 @@ import QuotaCore
     @Published var apiVersion: String?
     @Published var showSettings = false
     @Published var selectedView = "All accounts"
+    @Published var maximumPopoverHeight: CGFloat = (NSScreen.main?.visibleFrame.height ?? 800) - 24
     @Published var endpoint: String
     @Published var showPercentage: Bool { didSet { if !demo { UserDefaults.standard.set(showPercentage, forKey: "showPercentage") }; onChange?() } }
     @Published var pin: String { didSet { if !demo { UserDefaults.standard.set(pin, forKey: "pin") }; onChange?() } }

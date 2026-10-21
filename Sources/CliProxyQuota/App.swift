@@ -15,10 +15,20 @@ import QuotaCore
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("--verify-layout") {
+            Task { @MainActor in
+                do { try await Screenshots.verifyLayout() }
+                catch { fputs("Layout verification failed: \(error)\n", stderr); exit(1) }
+                NSApp.terminate(nil)
+            }
+            return
+        }
         if let index = arguments.firstIndex(of: "--screenshots"), arguments.count > index + 1 {
-            do { try Screenshots.write(to: URL(fileURLWithPath: arguments[index + 1], isDirectory: true)) }
-            catch { fputs("Screenshot rendering failed: \(error)\n", stderr); exit(1) }
-            NSApp.terminate(nil)
+            Task { @MainActor in
+                do { try await Screenshots.write(to: URL(fileURLWithPath: arguments[index + 1], isDirectory: true)) }
+                catch { fputs("Screenshot rendering failed: \(error)\n", stderr); exit(1) }
+                NSApp.terminate(nil)
+            }
             return
         }
         store = QuotaStore(demo: arguments.contains("--demo"))
@@ -28,7 +38,11 @@ import QuotaCore
         popover = NSPopover()
         popover.behavior = .transient
         popover.delegate = self
-        popover.contentViewController = NSHostingController(rootView: QuotaPopover(store: store))
+        let controller = NSHostingController(rootView: QuotaPopover(store: store))
+        controller.sizingOptions = [.preferredContentSize]
+        popover.contentViewController = controller
+        NotificationCenter.default.addObserver(self, selector: #selector(updateScreenLimit),
+            name: NSApplication.didChangeScreenParametersNotification, object: nil)
         store.onChange = { [weak self] in self?.updateStatus() }
         updateStatus()
         statusTimer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in
@@ -54,16 +68,22 @@ import QuotaCore
     @objc private func togglePopover() {
         if popover.isShown { popover.performClose(nil) }
         else if let button = item.button {
+            // visibleFrame excludes the menu bar and Dock on the display hosting the tray item.
+            updateScreenLimit()
             NSApp.activate(ignoringOtherApps: true)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
         }
     }
+    @objc private func updateScreenLimit() {
+        let screen = item.button?.window?.screen ?? NSScreen.main
+        store.maximumPopoverHeight = (screen?.visibleFrame.height ?? 800) - 24
+    }
 }
 
 /// Render the actual native views with synthetic data, without capturing the user's desktop.
 @MainActor enum Screenshots {
-    static func write(to directory: URL) throws {
+    static func write(to directory: URL) async throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         for (name, tab, settings, dark) in [
             ("overview", "All accounts", false, false),
@@ -73,25 +93,67 @@ import QuotaCore
         ] {
             let store = QuotaStore(demo: true)
             store.selectedView = tab; store.showSettings = settings
-            let view = QuotaPopover(store: store, expandedInitially: tab == "Per account" ? ["demo-codex-1"] : []).environment(\.colorScheme, dark ? .dark : .light)
-            let controller = NSHostingController(rootView: view)
-            let fitting = controller.view.fittingSize
-            let size = NSSize(width: 390, height: max(200, fitting.height))
-            let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless], backing: .buffered, defer: false)
-            window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-            window.contentViewController = controller
-            window.setContentSize(size)
-            controller.view.frame = NSRect(origin: .zero, size: size)
-            window.orderFrontRegardless()
-            controller.view.layoutSubtreeIfNeeded()
-            // Give AppKit a layout/display pass before reading the native backing store.
-            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+            let controller = NSHostingController(rootView: QuotaPopover(store: store,
+                expandedInitially: tab == "Per account" ? ["demo-codex-1"] : [])
+                .environment(\.colorScheme, dark ? .dark : .light))
+            let window = await prepare(controller, dark: dark)
             guard let bitmap = controller.view.bitmapImageRepForCachingDisplay(in: controller.view.bounds) else {
                 throw CocoaError(.fileWriteUnknown)
             }
             controller.view.cacheDisplay(in: controller.view.bounds, to: bitmap)
             guard let data = bitmap.representation(using: .png, properties: [:]) else { throw CocoaError(.fileWriteUnknown) }
             try data.write(to: directory.appendingPathComponent("\(name).png"))
+            window.orderOut(nil)
+        }
+    }
+    private static func prepare<V: View>(_ controller: NSHostingController<V>, dark: Bool = false) async -> NSWindow {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 390, height: 600),
+            styleMask: [.borderless], backing: .buffered, defer: false)
+        window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        window.contentViewController = controller
+        controller.view.frame = NSRect(x: 0, y: 0, width: 390, height: 600)
+        window.orderFrontRegardless()
+        await settle(controller, window: window)
+        return window
+    }
+    private static func settle<V: View>(_ controller: NSHostingController<V>, window: NSWindow) async {
+        // Let content and chrome measurements settle, including after account expansion or tab changes.
+        for _ in 0..<5 {
+            controller.view.layoutSubtreeIfNeeded()
+            try? await Task.sleep(for: .milliseconds(80))
+            let height = controller.view.fittingSize.height
+            window.setContentSize(NSSize(width: 390, height: max(1, height)))
+            controller.view.frame = NSRect(x: 0, y: 0, width: 390, height: max(1, height))
+        }
+        controller.view.layoutSubtreeIfNeeded()
+    }
+    static func verifyLayout() async throws {
+        func check(_ condition: Bool, _ message: String) throws {
+            if !condition { throw NSError(domain: "PopoverLayout", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
+        }
+        for tab in ["All accounts", "Per account"] {
+            let store = QuotaStore(demo: true)
+            store.maximumPopoverHeight = 1200
+            store.selectedView = tab
+            let controller = NSHostingController(rootView: QuotaPopover(store: store,
+                expandedInitially: Set(store.quotas.map(\.id))))
+            let window = await prepare(controller)
+            let natural = controller.view.fittingSize.height
+            try check(natural > 500 && natural < 1200, "\(tab) must fit full expanded content on a tall display: \(natural)")
+            store.maximumPopoverHeight = 500
+            await settle(controller, window: window)
+            let capped = controller.view.fittingSize.height
+            try check(abs(capped - 500) < 2, "\(tab) must scroll at the screen boundary: \(capped)")
+            store.maximumPopoverHeight = 1200
+            await settle(controller, window: window)
+            let restored = controller.view.fittingSize.height
+            try check(abs(restored - natural) < 2, "\(tab) must grow back when more screen space is available")
+            // Changing tabs must remeasure the chrome as well as the list.
+            store.selectedView = tab == "All accounts" ? "Per account" : "All accounts"
+            await settle(controller, window: window)
+            let switched = controller.view.fittingSize.height
+            try check(switched > 500 && switched < 1200, "Tab switch must retain natural content sizing")
+            print("\(tab): full \(Int(natural))pt; capped \(Int(capped))pt; restored \(Int(restored))pt; tab switch \(Int(switched))pt")
             window.orderOut(nil)
         }
     }

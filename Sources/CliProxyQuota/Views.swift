@@ -7,10 +7,16 @@ private let quotaGreen = Color(red: 0.26, green: 0.53, blue: 0.46)
 struct QuotaPopover: View {
     @ObservedObject var store: QuotaStore
     @State private var expanded = Set<String>()
+    @State private var listHeight: CGFloat = 440
+    @State private var chromeHeight: CGFloat = 270
+    private var listViewportHeight: CGFloat {
+        min(listHeight, max(1, store.maximumPopoverHeight - chromeHeight))
+    }
     init(store: QuotaStore, expandedInitially: Set<String> = []) {
         self.store = store; _expanded = State(initialValue: expandedInitially)
     }
     var body: some View {
+        let occupiedListHeight = (!store.showSettings && !store.quotas.isEmpty) ? listViewportHeight : 0
         VStack(spacing: 0) {
             header
             Divider()
@@ -33,8 +39,15 @@ struct QuotaPopover: View {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 0) {
                                 if store.selectedView == "All accounts" { overview } else { accountList }
-                            }.frame(maxWidth: .infinity, alignment: .leading)
-                        }.frame(maxHeight: 440)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                                if height > 0 && abs(listHeight - height) > 0.5 { listHeight = height }
+                            }
+                        }
+                        .frame(height: listViewportHeight)
+                        .scrollDisabled(listHeight <= listViewportHeight + 0.5)
                         if store.selectedView == "All accounts" {
                             Text("Averages of reporting accounts, grouped by matching quota. Different limits stay separate.")
                                 .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -54,6 +67,13 @@ struct QuotaPopover: View {
         .frame(width: 390)
         .background(Color(nsColor: .windowBackgroundColor))
         .tint(quotaGreen)
+        .onGeometryChange(for: CGFloat.self) { geometry in
+            geometry.size.height - occupiedListHeight
+        } action: { height in
+            if !store.showSettings && !store.quotas.isEmpty && abs(chromeHeight - height) > 0.5 {
+                chromeHeight = height
+            }
+        }
         .onChange(of: store.selectedView) { _, _ in store.onChange?() }
     }
     private var header: some View {

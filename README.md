@@ -19,6 +19,7 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 - **Remaining usage**, with progress bars and reset countdowns for every reported limit.
 - **All accounts** groups matching provider quotas and shows the average remaining percentage.
 - **Per account** expands into individual windows, including weekly and model-specific limits.
+- **Fits your screen**: both views grow to show all content, scrolling only when the popover would exceed the available display height.
 - **Pin a quota** to show its remaining percentage directly in the menu bar.
 - **Automatic refresh** every 1, 2, 5, or 10 minutes, plus manual refresh.
 - **Configurable connection** with the management password stored in macOS Keychain, scoped to the instance URL.
@@ -112,6 +113,7 @@ API references: [current Management API](https://github.com/router-for-me/CLIPro
 ```sh
 swift test                      # quota math, parsing, aggregation, and mocked HTTP requests
 swift build                     # debug build
+.build/debug/CliProxyQuota --verify-layout # native checks for natural height, overflow, and tab changes
 ./scripts/build-app.sh           # release app bundle + icon + local signature
 ./scripts/screenshots.sh         # render native views using synthetic data
 open "build/CliProxy Quota.app" --args --demo --show
