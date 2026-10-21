@@ -40,7 +40,11 @@ Screenshots are rendered from the app's actual SwiftUI views in **Demo** mode. A
 
 ## Install
 
-Requires **macOS 14 Sonoma or later** and Xcode 16 or newer (Swift 6) to build.
+Requires **macOS 14 Sonoma or later**. Supports Apple Silicon and Intel.
+
+**[Download the latest app](https://github.com/aduggleby/CliProxyQuota/releases/latest)**, unzip it, and move **CliProxy Quota.app** into Applications. No Xcode is needed for the prebuilt app.
+
+To build from source, install Xcode 16 or newer (Swift 6), then:
 
 ```sh
 git clone https://github.com/aduggleby/CliProxyQuota.git
