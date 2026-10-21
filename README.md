@@ -17,10 +17,12 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 ## A quieter way to watch your limits
 
 - **Remaining usage**, with progress bars and reset countdowns for every reported limit.
-- **All accounts** groups matching provider quotas and shows the average remaining percentage.
-- **Per account** expands into individual windows, including weekly and model-specific limits.
+- **All accounts** groups matching provider quotas and shows their average in the selected percentage mode.
+- **Per account** shows individual windows, including weekly and model-specific limits.
 - **Fits your screen**: both views grow to show all content, scrolling only when the popover would exceed the available display height.
-- **Pin a quota** to show its remaining percentage directly in the menu bar.
+- **Remaining or Used**: one preference updates percentages and bars in both quota views and the menu bar.
+- **5-hour, Weekly, or Both** in the menu bar. Single limits show `72%`; Both shows `⁵ʰ 72% · ʷ 84%`.
+- **Checkbox source menu**: select provider averages or individual accounts. Each selected source gets its own menu bar item; clear all selections for icon-only mode.
 - **Automatic refresh** every 1, 2, 5, or 10 minutes, plus manual refresh.
 - **Configurable connection** with the management password stored in macOS Keychain, scoped to the instance URL.
 - **Light and dark mode**, optional launch at login, and no Dock icon.
@@ -70,13 +72,20 @@ Local builds are **ad-hoc signed**, not Developer ID signed or notarized. Downlo
 2. Enter your CLIProxyAPI instance's base URL, such as `http://localhost:8317` or `https://proxy.example.com`.
 3. Enter the **management password/key**, not a proxy inference API key or a provider OAuth token.
 4. Choose a refresh interval and click **Save & connect**.
-5. Use **Per account** to inspect windows; click a pin to put that quota in the menu bar.
+5. Under **Display**, choose **Remaining / Used**, **5-hour / Weekly / Both**, and one or more **Source** checkboxes. Changes apply immediately.
+6. Click **Done** to return to **All accounts** or **Per account**. Both use the selected percentage mode.
+
+Display, Connection, and General share one Settings screen. Connection changes use **Save & connect**; a blank management-password field keeps the saved Keychain password for that same instance. Refresh interval and launch-at-login are under General.
 
 The management API must be enabled. Connections from another machine require remote management to be allowed on the server. Your Mac must be able to resolve and reach the URL, including any required VPN.
 
 HTTPS is the default for remote instances. To use a trusted HTTP instance, explicitly enable **Allow HTTP for this instance**. HTTP carries the management password without encryption; the opt-in applies only to that saved URL. Redirects are refused so credentials cannot silently move to another endpoint.
 
 <img src="docs/screenshots/settings.png" width="390" alt="Settings for instance URL, management key, polling interval, and launch at login" />
+
+### Used mode
+
+<img src="docs/screenshots/overview-used.png" width="420" alt="Used percentages and matching bars across provider quotas" />
 
 ## Provider support
 
@@ -96,7 +105,7 @@ Provider responses are the source of truth: used percentages are converted to **
 
 The overview is an **unweighted average across reporting accounts for the same provider and quota window**. It is not a combined transferable allowance: accounts may have different plans, capacities, and reset times. Each pool shows the reporting-account count and the earliest reported reset. Disabled accounts are excluded. A provider-level failure stays visible in the account list, and the overview calls out partial coverage.
 
-Old data is marked after a connection failure or when it becomes stale; the menu bar shows a dash instead of a stale percentage. A reset countdown reaching zero does not automatically grant fresh quota—the next successful API refresh confirms it. If you haven't pinned anything, the menu bar uses the first available quota pool in display order.
+Old data is marked after a connection failure or when it becomes stale; the menu bar shows a dash instead of a stale percentage. A reset countdown reaching zero does not automatically grant fresh quota—the next successful API refresh confirms it. On first launch, the menu bar defaults to the Codex provider average when available, otherwise the first provider. Existing pinned selections are migrated. Sources without the selected 5-hour or weekly window show a dash; tooltips retain the window name when a single percentage is shown. Low-quota warning colors always reflect remaining capacity, including in Used mode.
 
 ## How it works
 
@@ -104,7 +113,7 @@ The app first requests `GET /v8/management/credentials`. If the server returns 4
 
 Your Mac communicates with **your CliProxy instance**. CliProxy makes the provider quota requests using the credentials it already holds. The app does not download provider credential files, change routing, enable/disable accounts, or redeem/reset quotas. At most four account quota checks run concurrently. Polling uses an ephemeral URL session with no response cache; raw API error bodies are never shown or logged.
 
-The management key is stored in macOS Keychain, associated with the normalized instance URL. The URL, refresh interval, pin, and display preferences are stored locally in UserDefaults. Quota results and account details remain in memory. No configuration or credentials belong in this repository.
+The management key is stored in macOS Keychain, associated with the normalized instance URL. The URL, refresh interval, selected source identifiers, percentage mode, and menu bar window are stored locally in UserDefaults. Quota results and account details remain in memory. No configuration or credentials belong in this repository.
 
 API references: [current Management API](https://github.com/router-for-me/CLIProxyAPIDocs/blob/main/docs/en/management/apiv8.md), [legacy API](https://github.com/router-for-me/CLIProxyAPIDocs/blob/main/docs/en/management/api.md), and [official management UI quota readers](https://github.com/router-for-me/Cli-Proxy-API-Management-Center/tree/main/src/features/quota/providers).
 

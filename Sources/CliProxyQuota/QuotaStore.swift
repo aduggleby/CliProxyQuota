@@ -11,8 +11,15 @@ import QuotaCore
     @Published var selectedView = "All accounts"
     @Published var maximumPopoverHeight: CGFloat = (NSScreen.main?.visibleFrame.height ?? 800) - 24
     @Published var endpoint: String
-    @Published var showPercentage: Bool { didSet { if !demo { UserDefaults.standard.set(showPercentage, forKey: "showPercentage") }; onChange?() } }
-    @Published var pin: String { didSet { if !demo { UserDefaults.standard.set(pin, forKey: "pin") }; onChange?() } }
+    @Published var percentageMode: PercentageMode { didSet { persist(percentageMode.rawValue, key: "percentageMode"); onChange?() } }
+    @Published var menuBarWindow: MenuBarWindow { didSet { persist(menuBarWindow.rawValue, key: "menuBarWindow"); onChange?() } }
+    @Published var menuSourceIDs: [String]? { didSet {
+        if !demo {
+            if let menuSourceIDs { UserDefaults.standard.set(menuSourceIDs, forKey: "menuSources") }
+            else { UserDefaults.standard.removeObject(forKey: "menuSources") }
+        }
+        onChange?()
+    } }
     @Published var interval: Double { didSet { if !demo { UserDefaults.standard.set(interval, forKey: "interval") }; restartTimer() } }
     let demo: Bool
     var onChange: (() -> Void)?
@@ -23,22 +30,36 @@ import QuotaCore
     var hasFailures: Bool { quotas.contains { $0.issue != nil && !$0.account.disabled } }
     var configured: Bool { UserDefaults.standard.bool(forKey: "configured") }
     var isStale: Bool { issue != nil || (lastUpdated.map { Date().timeIntervalSince($0) > max(interval * 2, 180) } ?? true) }
-    var menuValue: Double? {
-        guard !isStale, !demo else { return nil }
-        if !pin.isEmpty {
-            for q in quotas {
-                for w in q.windows where "\(q.id)|\(w.id)" == pin { return w.remaining }
-            }
-            return pools.first { $0.id == pin }?.remaining
-        }
-        return pools.first?.remaining
+    var sourceOptions: [MenuBarSource] { MenuBarSource.options(from: quotas) }
+    var resolvedSourceIDs: [String] {
+        menuSourceIDs ?? (sourceOptions.first { $0.id == "provider:codex" } ?? sourceOptions.first).map { [$0.id] } ?? []
     }
+    var menuReadouts: [MenuBarReadout] {
+        resolvedSourceIDs.map { id in
+            sourceOptions.first { $0.id == id }?.readout(from: quotas, stale: isStale) ??
+                MenuBarReadout(id: id, title: "Unavailable", detail: "Selected source is unavailable", fiveHour: nil, weekly: nil)
+        }
+    }
+    func toggleSource(_ id: String) {
+        var ids = resolvedSourceIDs
+        if ids.contains(id) { ids.removeAll { $0 == id } } else { ids.append(id) }
+        menuSourceIDs = ids
+    }
+    private func persist(_ value: String, key: String) { if !demo { UserDefaults.standard.set(value, forKey: key) } }
     init(demo: Bool = false) {
         self.demo = demo
         let defaults = UserDefaults.standard
         endpoint = demo ? "https://proxy.example.com" : defaults.string(forKey: "endpoint") ?? "http://localhost:8317"
-        showPercentage = defaults.object(forKey: "showPercentage") as? Bool ?? true
-        pin = demo ? "" : defaults.string(forKey: "pin") ?? ""
+        percentageMode = demo ? .remaining : PercentageMode(rawValue: defaults.string(forKey: "percentageMode") ?? "") ?? .remaining
+        menuBarWindow = demo ? .both : MenuBarWindow(rawValue: defaults.string(forKey: "menuBarWindow") ?? "") ?? .both
+        if demo { menuSourceIDs = ["provider:codex"] }
+        else if let ids = defaults.stringArray(forKey: "menuSources") { menuSourceIDs = ids }
+        else if defaults.object(forKey: "showPercentage") as? Bool == false { menuSourceIDs = [] }
+        else if let oldPin = defaults.string(forKey: "pin"), !oldPin.isEmpty {
+            if let separator = oldPin.firstIndex(of: "|") { menuSourceIDs = ["account:" + oldPin[..<separator]] }
+            else if let provider = oldPin.split(separator: "/").first { menuSourceIDs = ["provider:" + provider] }
+            else { menuSourceIDs = nil }
+        } else { menuSourceIDs = nil }
         interval = defaults.object(forKey: "interval") as? Double ?? 120
         if demo { quotas = Self.sample; lastUpdated = Date(); apiVersion = "Demo" }
     }
@@ -92,7 +113,8 @@ import QuotaCore
         guard !key.isEmpty else { throw QuotaError.missingKey }
         try Keychain.save(key, for: base.absoluteString)
         generation += 1; refreshTask?.cancel(); refreshing = false
-        quotas = []; lastUpdated = nil; issue = nil; pin = ""
+        quotas = []; lastUpdated = nil; issue = nil
+        if endpoint != base.absoluteString { menuSourceIDs = nil }
         endpoint = base.absoluteString
         UserDefaults.standard.set(allowInsecureHTTP ? endpoint : "", forKey: "insecureEndpoint")
         UserDefaults.standard.set(endpoint, forKey: "endpoint")
