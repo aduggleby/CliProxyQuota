@@ -54,9 +54,7 @@ import QuotaCore
     }
     private func updateStatus() {
         guard let button = item.button else { return }
-        let image = NSImage(systemSymbolName: "battery.75percent", accessibilityDescription: "CliProxy remaining quota")
-        image?.isTemplate = true
-        button.image = image
+        button.image = QuotaBotIcon.menuBar
         button.imagePosition = .imageLeading
         if store.demo { button.title = " Demo" }
         else if store.showPercentage {

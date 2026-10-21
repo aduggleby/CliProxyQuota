@@ -66,7 +66,7 @@ Local builds are **ad-hoc signed**, not Developer ID signed or notarized. Downlo
 
 ## Connect your instance
 
-1. Click the battery icon in the menu bar, then the settings icon.
+1. Click the Quota Bot icon in the menu bar, then the settings icon.
 2. Enter your CLIProxyAPI instance's base URL, such as `http://localhost:8317` or `https://proxy.example.com`.
 3. Enter the **management password/key**, not a proxy inference API key or a provider OAuth token.
 4. Choose a refresh interval and click **Save & connect**.

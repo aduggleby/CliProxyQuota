@@ -78,7 +78,10 @@ struct QuotaPopover: View {
     }
     private var header: some View {
         HStack(spacing: 10) {
-            Image(systemName: "battery.75percent")
+            Image(nsImage: QuotaBotIcon.menuBar)
+                .renderingMode(.template)
+                .resizable().scaledToFit()
+                .frame(width: 20, height: 20)
                 .font(.system(size: 18, weight: .medium)).foregroundStyle(quotaGreen)
                 .frame(width: 34, height: 34).background(.quaternary, in: RoundedRectangle(cornerRadius: 9))
             VStack(alignment: .leading, spacing: 3) {
@@ -193,8 +196,10 @@ struct QuotaPopover: View {
     }
     private var emptyState: some View {
         VStack(spacing: 12) {
-            Image(systemName: store.refreshing ? "arrow.triangle.2.circlepath" : "battery.0percent")
-                .font(.system(size: 30)).foregroundStyle(.secondary)
+            Image(nsImage: QuotaBotIcon.menuBar)
+                .renderingMode(.template)
+                .resizable().scaledToFit().frame(width: 34, height: 34)
+                .foregroundStyle(.secondary)
             Text(store.refreshing ? "Reading account quotas…" : store.lastUpdated != nil ? "No accounts found" : "Your quotas, at a glance")
                 .font(.system(size: 14, weight: .medium))
             Text(store.lastUpdated != nil ? "Add OAuth accounts to your CliProxy instance to see their remaining limits." : "Connect to CliProxy to see remaining usage and reset times for each account.")
