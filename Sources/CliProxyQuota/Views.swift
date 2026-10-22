@@ -94,7 +94,8 @@ struct QuotaPopover: View {
             ForEach(Array(Set(store.pools.map(\.provider))).sorted(), id: \.self) { provider in
                 let pools = store.pools.filter { $0.provider == provider }
                 VStack(alignment: .leading, spacing: 13) {
-                    HStack {
+                    HStack(spacing: 7) {
+                        ProviderIcon(provider: provider)
                         Text(provider).font(.system(size: 13, weight: .semibold))
                         if let first = pools.first {
                             Text("\(first.reportingAccounts)/\(first.totalAccounts) reporting").font(.system(size: 11)).foregroundStyle(.secondary)
@@ -120,8 +121,7 @@ struct QuotaPopover: View {
             ForEach(store.quotas) { q in
                 VStack(alignment: .leading, spacing: 13) {
                     HStack(spacing: 9) {
-                        Text(String(q.account.providerName.prefix(1))).font(.system(size: 11, weight: .medium))
-                            .frame(width: 28, height: 28).background(.quaternary, in: RoundedRectangle(cornerRadius: 7))
+                        ProviderIcon(provider: q.account.provider)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(q.account.providerName).font(.system(size: 12, weight: .semibold))
                             Text(q.account.email).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)

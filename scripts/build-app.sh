@@ -8,6 +8,10 @@ BIN_DIR=$(swift build "${BUILD_FLAGS[@]}" --show-bin-path)
 APP="build/CliProxy Quota.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/CliProxyQuota" "$APP/Contents/MacOS/CliProxyQuota"
+for RESOURCE_BUNDLE in "$BIN_DIR"/*.bundle; do
+    [[ -d "$RESOURCE_BUNDLE" ]] || continue
+    ditto "$RESOURCE_BUNDLE" "$APP/Contents/Resources/$(basename "$RESOURCE_BUNDLE")"
+done
 swiftc Sources/CliProxyQuota/QuotaBotIcon.swift scripts/make-icon.swift -o build/make-icon
 build/make-icon build/AppIcon.iconset
 iconutil -c icns build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"
@@ -21,8 +25,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 <key>CFBundleDisplayName</key><string>CliProxy Quota</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>1.1.1</string>
-<key>CFBundleVersion</key><string>5</string>
+<key>CFBundleShortVersionString</key><string>1.1.2</string>
+<key>CFBundleVersion</key><string>6</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>LSUIElement</key><true/>
 <key>NSHighResolutionCapable</key><true/>

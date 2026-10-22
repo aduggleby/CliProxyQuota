@@ -139,6 +139,7 @@ import QuotaCore
         controller.view.layoutSubtreeIfNeeded()
     }
     static func verifyLayout() async throws {
+        try ProviderArtwork.verifyAssets()
         func check(_ condition: Bool, _ message: String) throws {
             if !condition { throw NSError(domain: "PopoverLayout", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
         }

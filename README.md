@@ -27,6 +27,7 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 - **Configurable connection** with the management password stored in macOS Keychain, scoped to the instance URL.
 - **Light and dark mode**, optional launch at login, and no Dock icon.
 - **No third-party dependencies**, analytics, or account-token storage.
+- **Provider icons**: official OpenAI (for Codex), Claude, and Gemini artwork in both quota views and the source menu, with a letter fallback for other providers. Bundled locally for offline use.
 - **Management UI shortcut**: the external-link icon in the footer opens your configured instance's management page in your browser.
 
 <table>
@@ -140,4 +141,4 @@ scripts/               Build, install, icon, and screenshot tooling
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Provider artwork is excluded; see [third-party notices](THIRD_PARTY_NOTICES.md).

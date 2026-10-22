@@ -7,7 +7,7 @@ let package = Package(
     products: [.executable(name: "CliProxyQuota", targets: ["CliProxyQuota"])],
     targets: [
         .target(name: "QuotaCore"),
-        .executableTarget(name: "CliProxyQuota", dependencies: ["QuotaCore"]),
+        .executableTarget(name: "CliProxyQuota", dependencies: ["QuotaCore"], resources: [.copy("Resources/ProviderIcons")]),
         .testTarget(name: "QuotaCoreTests", dependencies: ["QuotaCore"])
     ],
     swiftLanguageModes: [.v5]

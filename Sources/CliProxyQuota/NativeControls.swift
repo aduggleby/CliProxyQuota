@@ -57,17 +57,18 @@ struct SourceMenuButton: NSViewRepresentable {
             let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
             item.isEnabled = false; menu.addItem(item)
         }
-        func add(_ id: String, _ title: String) {
+        func add(_ id: String, _ title: String, provider: String? = nil) {
             let item = NSMenuItem(title: title, action: #selector(SourceCoordinator.toggle(_:)), keyEquivalent: "")
             item.target = coordinator; item.representedObject = id
+            if let provider { item.image = ProviderArtwork.menuImage(for: provider) }
             item.state = selectedIDs.contains(id) ? .on : .off
             menu.addItem(item)
         }
         heading("PROVIDER AVERAGES")
-        for source in sources.filter(\.isProvider) { add(source.id, "\(source.title) · \(source.detail)") }
+        for source in sources.filter(\.isProvider) { add(source.id, "\(source.title) · \(source.detail)", provider: source.provider) }
         menu.addItem(.separator())
         heading("INDIVIDUAL ACCOUNTS")
-        for source in sources.filter({ !$0.isProvider }) { add(source.id, "\(source.title) · \(source.detail)") }
+        for source in sources.filter({ !$0.isProvider }) { add(source.id, "\(source.title) · \(source.detail)", provider: source.provider) }
         for id in selectedIDs where !sources.contains(where: { $0.id == id }) { add(id, "Unavailable source") }
         if sources.isEmpty { heading("Connect to load accounts") }
         return menu
