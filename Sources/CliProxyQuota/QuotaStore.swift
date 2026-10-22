@@ -29,6 +29,11 @@ import QuotaCore
     var pools: [QuotaPool] { QuotaPool.make(from: quotas) }
     var hasFailures: Bool { quotas.contains { $0.issue != nil && !$0.account.disabled } }
     var configured: Bool { UserDefaults.standard.bool(forKey: "configured") }
+    var managementUIURL: URL? {
+        let allowHTTP = UserDefaults.standard.string(forKey: "insecureEndpoint") == endpoint
+        return (try? InstanceURL.normalized(endpoint, allowInsecureHTTP: allowHTTP))?
+            .appendingPathComponent("management.html")
+    }
     var isStale: Bool { issue != nil || (lastUpdated.map { Date().timeIntervalSince($0) > max(interval * 2, 180) } ?? true) }
     var sourceOptions: [MenuBarSource] { MenuBarSource.options(from: quotas) }
     var resolvedSourceIDs: [String] {

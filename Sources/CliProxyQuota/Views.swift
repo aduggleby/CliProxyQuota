@@ -165,6 +165,15 @@ struct QuotaPopover: View {
                 Button { store.refresh() } label: { Label("Refresh", systemImage: "arrow.clockwise") }
                     .disabled(store.refreshing || store.demo).buttonStyle(.plain).keyboardShortcut("r")
             }
+            if let managementURL = store.managementUIURL {
+                Link(destination: managementURL) {
+                    Image(systemName: "arrow.up.right.square")
+                }
+                .buttonStyle(.plain)
+                .help("Open Management UI")
+                .accessibilityLabel("Open Management UI")
+                .disabled(store.demo)
+            }
             Menu {
                 if let version = store.apiVersion { Text(version) }
                 Button("Quit CliProxy Quota") { NSApplication.shared.terminate(nil) }.keyboardShortcut("q")
