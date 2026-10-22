@@ -50,6 +50,11 @@ import QuotaCore
         if !store.configured && !store.demo { togglePopover() }
         if arguments.contains("--show") { togglePopover() }
     }
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        guard popover != nil else { return false }
+        if !popover.isShown { togglePopover() }
+        return false
+    }
     private func updateStatus() {
         let readouts = store.menuReadouts
         let count = max(1, readouts.count)
