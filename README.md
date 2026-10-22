@@ -30,6 +30,8 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 - **Provider icons**: artwork for 17 provider identities in both quota views and the source menu, including light/dark variants where supplied. Unknown custom providers retain a letter fallback. Bundled locally for offline use.
 - **Three-dot menu**: Refresh, Open management UI, API version, and Quit are grouped in the bottom-right menu.
 
+## Screenshots
+
 <table>
 <tr>
 <td align="center"><strong>Account detail</strong></td>
@@ -73,9 +75,9 @@ Local builds are **ad-hoc signed**, not Developer ID signed or notarized. Downlo
 1. Click the Quota Bot icon in the menu bar, then the settings icon.
 2. Enter your CLIProxyAPI instance's base URL, such as `http://localhost:8317` or `https://proxy.example.com`.
 3. Enter the **management password/key**, not a proxy inference API key or a provider OAuth token.
-4. Choose a refresh interval and click **Save & connect**.
+4. Click **Save & connect** in **Connection**. Choose a refresh interval under **General**.
 5. Under **Tray Display**, choose **Remaining / Used**, **5-hour / Weekly / Both**, and one or more **Source** checkboxes. Changes apply immediately.
-6. Click **Done** to return to **All accounts** or **Per account**. Both use the selected percentage mode.
+6. Use the back arrow to return to **All accounts** or **Per account**. Both use the selected percentage mode.
 
 Settings has three tabs: **General**, **Connection**, and **Tray Display**. Connection changes use **Save & connect**; a blank management-password field keeps the saved Keychain password for that same instance. Refresh interval, launch-at-login, and **Light / Dark / System (Default)** appearance are under General. Appearance changes apply immediately and are remembered.
 
@@ -83,9 +85,20 @@ The management API must be enabled. Connections from another machine require rem
 
 HTTPS is the default for remote instances. To use a trusted HTTP instance, explicitly enable **Allow HTTP for this instance**. HTTP carries the management password without encryption; the opt-in applies only to that saved URL. Redirects are refused so credentials cannot silently move to another endpoint.
 
-<img src="docs/screenshots/settings.png" width="390" alt="Tray Display settings for percentages, quota windows, and source selection" />
-<img src="docs/screenshots/settings-connection.png" width="390" alt="Connection settings for instance URL and management password" />
-<img src="docs/screenshots/settings-general.png" width="390" alt="General settings for refresh interval and launch at login" />
+### Settings screenshots
+
+<table>
+<tr><td align="center"><strong>General</strong></td><td align="center"><strong>Connection</strong></td></tr>
+<tr>
+<td><img src="docs/screenshots/settings-general.png" width="360" alt="General settings with Light, Dark, and System appearance, refresh interval, and launch at login" /></td>
+<td><img src="docs/screenshots/settings-connection.png" width="360" alt="Connection settings with instance URL, management password, and Save and connect" /></td>
+</tr>
+<tr><td align="center"><strong>Tray Display</strong></td><td align="center"><strong>General in dark mode</strong></td></tr>
+<tr>
+<td><img src="docs/screenshots/settings.png" width="360" alt="Tray Display settings for remaining or used percentages, quota windows, and source selection" /></td>
+<td><img src="docs/screenshots/settings-general-dark.png" width="360" alt="General settings using dark appearance" /></td>
+</tr>
+</table>
 
 ### Used mode
 

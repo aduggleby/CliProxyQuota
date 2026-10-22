@@ -239,8 +239,6 @@ struct SettingsView: View {
             case "General": generalSettings
             default: displaySettings
             }
-            Divider()
-            HStack { Spacer(); Button("Done") { key = ""; store.showSettings = false }.buttonStyle(.borderedProminent) }
         }
         .onAppear {
             endpoint = store.endpoint
