@@ -28,7 +28,7 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 - **Light and dark mode**, optional launch at login, and no Dock icon.
 - **No third-party dependencies**, analytics, or account-token storage.
 - **Provider icons**: artwork for 17 provider identities in both quota views and the source menu, including light/dark variants where supplied. Unknown custom providers retain a letter fallback. Bundled locally for offline use.
-- **Management UI shortcut**: the external-link icon in the footer opens your configured instance's management page in your browser.
+- **Three-dot menu**: Refresh, Open management UI, API version, and Quit are grouped in the bottom-right menu.
 
 <table>
 <tr>
@@ -74,16 +74,18 @@ Local builds are **ad-hoc signed**, not Developer ID signed or notarized. Downlo
 2. Enter your CLIProxyAPI instance's base URL, such as `http://localhost:8317` or `https://proxy.example.com`.
 3. Enter the **management password/key**, not a proxy inference API key or a provider OAuth token.
 4. Choose a refresh interval and click **Save & connect**.
-5. Under **Display**, choose **Remaining / Used**, **5-hour / Weekly / Both**, and one or more **Source** checkboxes. Changes apply immediately.
+5. Under **Tray Display**, choose **Remaining / Used**, **5-hour / Weekly / Both**, and one or more **Source** checkboxes. Changes apply immediately.
 6. Click **Done** to return to **All accounts** or **Per account**. Both use the selected percentage mode.
 
-Display, Connection, and General share one Settings screen. Connection changes use **Save & connect**; a blank management-password field keeps the saved Keychain password for that same instance. Refresh interval and launch-at-login are under General.
+Settings has three tabs: **General**, **Connection**, and **Tray Display**. Connection changes use **Save & connect**; a blank management-password field keeps the saved Keychain password for that same instance. Refresh interval, launch-at-login, and **Light / Dark / System (Default)** appearance are under General. Appearance changes apply immediately and are remembered.
 
 The management API must be enabled. Connections from another machine require remote management to be allowed on the server. Your Mac must be able to resolve and reach the URL, including any required VPN.
 
 HTTPS is the default for remote instances. To use a trusted HTTP instance, explicitly enable **Allow HTTP for this instance**. HTTP carries the management password without encryption; the opt-in applies only to that saved URL. Redirects are refused so credentials cannot silently move to another endpoint.
 
-<img src="docs/screenshots/settings.png" width="390" alt="Settings for instance URL, management key, polling interval, and launch at login" />
+<img src="docs/screenshots/settings.png" width="390" alt="Tray Display settings for percentages, quota windows, and source selection" />
+<img src="docs/screenshots/settings-connection.png" width="390" alt="Connection settings for instance URL and management password" />
+<img src="docs/screenshots/settings-general.png" width="390" alt="General settings for refresh interval and launch at login" />
 
 ### Used mode
 

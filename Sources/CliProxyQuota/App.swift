@@ -96,6 +96,9 @@ import QuotaCore
             ("overview", "All accounts", false, false),
             ("accounts", "Per account", false, false),
             ("settings", "All accounts", true, false),
+            ("settings-connection", "All accounts", true, false),
+            ("settings-general", "All accounts", true, false),
+            ("settings-general-dark", "All accounts", true, true),
             ("overview-dark", "All accounts", false, true),
             ("overview-used", "All accounts", false, false),
             ("accounts-used", "Per account", false, false)
@@ -103,10 +106,14 @@ import QuotaCore
             let store = QuotaStore(demo: true)
             store.selectedView = tab; store.showSettings = settings
             store.maximumPopoverHeight = 1200
+            if name == "settings-connection" { store.settingsTab = "Connection" }
+            if name.hasPrefix("settings-general") { store.settingsTab = "General" }
+            if name == "settings" { store.settingsTab = "Tray Display" }
             if name.hasSuffix("used") { store.percentageMode = .used }
             let controller = NSHostingController(rootView: QuotaPopover(store: store,
                 expandedInitially: tab == "Per account" ? ["demo-codex-1"] : [])
                 .environment(\.colorScheme, dark ? .dark : .light))
+            if dark { store.appearance = .dark }
             let window = await prepare(controller, dark: dark)
             guard let bitmap = controller.view.bitmapImageRepForCachingDisplay(in: controller.view.bounds) else {
                 throw CocoaError(.fileWriteUnknown)
@@ -167,13 +174,17 @@ import QuotaCore
             try check(switched > 500 && switched < 1200, "Tab switch must retain natural content sizing")
             print("\(tab): full \(Int(natural))pt; capped \(Int(capped))pt; restored \(Int(restored))pt; tab switch \(Int(switched))pt")
             store.showSettings = true
-            await settle(controller, window: window)
-            let settingsHeight = controller.view.fittingSize.height
-            try check(settingsHeight < 1200 && settingsHeight > 500, "Combined Settings must size to its full content")
-            store.maximumPopoverHeight = 500
-            await settle(controller, window: window)
-            try check(abs(controller.view.fittingSize.height - 500) < 2, "Settings must scroll at the screen boundary")
-            print("Settings: full \(Int(settingsHeight))pt; capped 500pt")
+            for settingsTab in ["General", "Connection", "Tray Display"] {
+                store.settingsTab = settingsTab
+                store.maximumPopoverHeight = 1200
+                await settle(controller, window: window)
+                let settingsHeight = controller.view.fittingSize.height
+                try check(settingsHeight > 200 && settingsHeight < 650, "Settings tab must fit its content")
+                store.maximumPopoverHeight = 200
+                await settle(controller, window: window)
+                try check(abs(controller.view.fittingSize.height - 200) < 2, "Settings must scroll at the screen boundary")
+                print("Settings \(settingsTab): full \(Int(settingsHeight))pt; capped 200pt")
+            }
             window.orderOut(nil)
         }
         let store = QuotaStore(demo: true)

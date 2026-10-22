@@ -2,31 +2,30 @@ import AppKit
 import SwiftUI
 import QuotaCore
 
-/// Explicit sizing keeps both segmented controls on the same right edge and width.
-struct SettingsSegments<Value: Hashable>: NSViewRepresentable {
+/// One clipped background keeps segment boundaries square and outer corners rounded.
+struct SettingsSegments<Value: Hashable>: View {
     let values: [Value]
     let title: (Value) -> String
     @Binding var selection: Value
-    func makeCoordinator() -> SegmentCoordinator { SegmentCoordinator() }
-    func makeNSView(context: Context) -> NSSegmentedControl {
-        let control = NSSegmentedControl(labels: values.map(title), trackingMode: .selectOne,
-            target: context.coordinator, action: #selector(SegmentCoordinator.select(_:)))
-        control.segmentDistribution = .fillEqually
-        control.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        return control
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(values.enumerated()), id: \.offset) { _, value in
+                Button { selection = value } label: {
+                    Text(title(value))
+                        .font(.system(size: 11, weight: selection == value ? .medium : .regular))
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .padding(.horizontal, 5)
+                        .frame(maxWidth: .infinity).frame(height: 25)
+                        .background(selection == value ? Color.primary.opacity(0.13) : Color.clear)
+                        .contentShape(Rectangle())
+                }.buttonStyle(.plain)
+                    .accessibilityAddTraits(selection == value ? .isSelected : [])
+            }
+        }
+        .background(Color.primary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .fixedSize(horizontal: false, vertical: true)
     }
-    func updateNSView(_ control: NSSegmentedControl, context: Context) {
-        control.selectedSegment = values.firstIndex(of: selection) ?? 0
-        context.coordinator.onSelect = { index in if values.indices.contains(index) { selection = values[index] } }
-    }
-    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSSegmentedControl, context: Context) -> CGSize? {
-        CGSize(width: proposal.width ?? 216, height: nsView.intrinsicContentSize.height)
-    }
-}
-
-final class SegmentCoordinator: NSObject {
-    var onSelect: (Int) -> Void = { _ in }
-    @objc func select(_ sender: NSSegmentedControl) { onSelect(sender.selectedSegment) }
 }
 
 struct SourceMenuButton: NSViewRepresentable {

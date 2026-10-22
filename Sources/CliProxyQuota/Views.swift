@@ -35,6 +35,7 @@ struct QuotaPopover: View {
         .frame(width: 420)
         .background(Color(nsColor: .windowBackgroundColor))
         .tint(quotaGreen)
+        .preferredColorScheme(store.appearance.colorScheme)
         .onGeometryChange(for: CGFloat.self) { $0.size.height - occupiedHeight } action: { height in
             if abs(chromeHeight - height) > 0.5 { chromeHeight = height }
         }
@@ -43,7 +44,7 @@ struct QuotaPopover: View {
         HStack(spacing: 10) {
             Image(nsImage: QuotaBotIcon.menuBar).renderingMode(.template)
                 .resizable().scaledToFit().frame(width: 23, height: 23).foregroundStyle(quotaGreen)
-                .frame(width: 37, height: 37).background(.quaternary, in: RoundedRectangle(cornerRadius: 9))
+                .frame(width: 37, height: 37)
             VStack(alignment: .leading, spacing: 3) {
                 Text(store.showSettings ? "Settings" : "CliProxy Quota").font(.system(size: 14, weight: .semibold))
                 HStack(spacing: 4) {
@@ -62,26 +63,21 @@ struct QuotaPopover: View {
     }
     private var quotaContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Picker("View", selection: $store.selectedView) {
-                Text("All accounts").tag("All accounts")
-                Text("Per account").tag("Per account")
-            }.pickerStyle(.segmented).labelsHidden()
+            HStack(spacing: 12) {
+                SettingsSegments(values: ["All accounts", "Per account"], title: { $0 }, selection: $store.selectedView)
+                    .frame(width: 230).accessibilityLabel("View")
+                Spacer(minLength: 0)
+                Text(store.percentageMode == .remaining ? "Remaining usage" : "Usage consumed")
+                    .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
+                    .lineLimit(1).fixedSize()
+            }
             if let issue = store.issue {
                 Label(issue, systemImage: "exclamationmark.triangle").font(.system(size: 12))
                     .foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
             }
             if store.quotas.isEmpty { emptyState }
             else {
-                HStack {
-                    Text(store.percentageMode == .remaining ? "REMAINING USAGE" : "USAGE CONSUMED")
-                    Spacer()
-                    Text(store.selectedView == "All accounts" ? "Account averages" : "Individual accounts")
-                }.font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
                 if store.selectedView == "All accounts" { overview } else { accountList }
-                if store.selectedView == "All accounts" {
-                    Text("Each provider is averaged separately. Reset times show the next account to reset.")
-                        .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                }
                 if store.isStale && !store.demo && store.lastUpdated != nil {
                     Label("Last known values · waiting for a successful refresh", systemImage: "clock.badge.exclamationmark")
                         .font(.system(size: 11)).foregroundStyle(.orange)
@@ -90,22 +86,24 @@ struct QuotaPopover: View {
         }
     }
     private var overview: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(Set(store.pools.map(\.provider))).sorted(), id: \.self) { provider in
+        let providers = Array(Set(store.pools.map(\.provider))).sorted()
+        return VStack(alignment: .leading, spacing: 0) {
+            ForEach(providers, id: \.self) { provider in
                 let pools = store.pools.filter { $0.provider == provider }
                 VStack(alignment: .leading, spacing: 13) {
                     HStack(spacing: 7) {
                         ProviderIcon(provider: provider)
                         Text(provider).font(.system(size: 13, weight: .semibold))
-                        if let first = pools.first {
-                            Text("\(first.reportingAccounts)/\(first.totalAccounts) reporting").font(.system(size: 11)).foregroundStyle(.secondary)
-                        }
                         Spacer()
-                        if pools.contains(where: { store.resolvedSourceIDs.contains("provider:" + $0.id.components(separatedBy: "/")[0]) }) { sourceBadge }
+                        if let first = pools.first {
+                            Text("\(first.reportingAccounts)/\(first.totalAccounts) accounts")
+                                .font(.system(size: 11)).foregroundStyle(.secondary)
+                                .accessibilityLabel("\(first.reportingAccounts) of \(first.totalAccounts) accounts reporting quota")
+                        }
                     }
                     QuotaMetrics(windows: pools.map { QuotaWindow(id: $0.id, label: $0.label, remaining: $0.remaining, resetsAt: $0.nextReset) }, mode: store.percentageMode)
                 }.padding(.vertical, 13)
-                Divider()
+                if provider != providers.last { Divider() }
             }
             if store.hasFailures {
                 Button { store.selectedView = "Per account" } label: { Label("Some accounts could not report quota", systemImage: "exclamationmark.triangle") }
@@ -127,7 +125,6 @@ struct QuotaPopover: View {
                             Text(q.account.email).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                         }
                         Spacer(minLength: 0)
-                        if store.resolvedSourceIDs.contains("account:\(q.id)") { sourceBadge }
                     }
                     if let issue = q.issue {
                         Text(issue).font(.system(size: 11)).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
@@ -137,10 +134,6 @@ struct QuotaPopover: View {
                 Divider()
             }
         }
-    }
-    private var sourceBadge: some View {
-        Text("In menu bar").font(.system(size: 10)).foregroundStyle(.secondary)
-            .padding(.horizontal, 6).padding(.vertical, 3).background(.quaternary, in: RoundedRectangle(cornerRadius: 4))
     }
     private var emptyState: some View {
         VStack(spacing: 12) {
@@ -161,23 +154,20 @@ struct QuotaPopover: View {
                 TimelineView(.periodic(from: .now, by: 15)) { _ in Text("Updated \(updated, style: .relative) ago") }
             } else { Text("Not connected") }
             Spacer()
-            if !store.showSettings {
-                Button { store.refresh() } label: { Label("Refresh", systemImage: "arrow.clockwise") }
-                    .disabled(store.refreshing || store.demo).buttonStyle(.plain).keyboardShortcut("r")
-            }
-            if let managementURL = store.managementUIURL {
-                Link(destination: managementURL) {
-                    Image(systemName: "arrow.up.right.square")
-                }
-                .buttonStyle(.plain)
-                .help("Open Management UI")
-                .accessibilityLabel("Open Management UI")
-                .disabled(store.demo)
-            }
             Menu {
-                if let version = store.apiVersion { Text(version) }
+                Button { store.refresh() } label: { Label("Refresh", systemImage: "arrow.clockwise") }
+                    .disabled(store.refreshing || store.demo).keyboardShortcut("r")
+                Button {
+                    if let url = store.managementUIURL { NSWorkspace.shared.open(url) }
+                } label: { Label("Open management UI", systemImage: "arrow.up.right.square") }
+                    .disabled(store.demo || store.managementUIURL == nil)
+                Divider()
+                Text("API version: \(store.apiVersion ?? "Unavailable")")
+                Divider()
                 Button("Quit CliProxy Quota") { NSApplication.shared.terminate(nil) }.keyboardShortcut("q")
-            } label: { Image(systemName: "ellipsis.circle") }.menuStyle(.borderlessButton).frame(width: 21)
+            } label: { Image(systemName: "ellipsis") }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 21)
+                .help("More actions").accessibilityLabel("More actions")
         }.font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 18).padding(.vertical, 12)
     }
 }
@@ -242,7 +232,23 @@ struct SettingsView: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            heading("Display")
+            SettingsSegments(values: ["General", "Connection", "Tray Display"], title: { $0 }, selection: $store.settingsTab)
+                .accessibilityLabel("Settings tab")
+            switch store.settingsTab {
+            case "Connection": connectionSettings
+            case "General": generalSettings
+            default: displaySettings
+            }
+            Divider()
+            HStack { Spacer(); Button("Done") { key = ""; store.showSettings = false }.buttonStyle(.borderedProminent) }
+        }
+        .onAppear {
+            endpoint = store.endpoint
+            allowInsecureHTTP = !store.demo && UserDefaults.standard.string(forKey: "insecureEndpoint") == store.endpoint
+        }
+    }
+    private var displaySettings: some View {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Percentages")
                 Spacer()
@@ -264,8 +270,10 @@ struct SettingsView: View {
                 Text("Select one or more sources. Each gets its own menu bar item; provider averages stay separate.")
                     .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
-            Divider().padding(.vertical, 3)
-            heading("Connection")
+        }
+    }
+    private var connectionSettings: some View {
+        VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 7) {
                 Text("Instance URL").font(.system(size: 12, weight: .medium))
                 TextField("http://localhost:8317", text: $endpoint).textFieldStyle(.roundedBorder)
@@ -284,8 +292,16 @@ struct SettingsView: View {
                 Spacer()
                 Button("Save & connect", action: saveConnection).buttonStyle(.bordered).disabled(store.demo)
             }
-            Divider().padding(.vertical, 3)
-            heading("General")
+        }
+    }
+    private var generalSettings: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Appearance")
+                Spacer()
+                SettingsSegments(values: AppAppearance.allCases, title: { $0.title }, selection: $store.appearance)
+                    .frame(width: 280).accessibilityLabel("Appearance")
+            }.font(.system(size: 12))
             HStack {
                 Text("Refresh every")
                 Spacer()
@@ -300,15 +316,9 @@ struct SettingsView: View {
                         if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
                     } catch { self.error = "Login item could not be updated. Check System Settings → General → Login Items." }
                 }
-            Divider()
-            HStack { Spacer(); Button("Done") { key = ""; store.showSettings = false }.buttonStyle(.borderedProminent) }
-        }
-        .onAppear {
-            endpoint = store.endpoint
-            allowInsecureHTTP = !store.demo && UserDefaults.standard.string(forKey: "insecureEndpoint") == store.endpoint
+            if let error { Text(error).font(.system(size: 11)).foregroundStyle(.orange) }
         }
     }
-    private func heading(_ text: String) -> some View { Text(text).font(.system(size: 16, weight: .semibold)) }
     private func saveConnection() {
         do {
             let base = try InstanceURL.normalized(endpoint, allowInsecureHTTP: allowInsecureHTTP)

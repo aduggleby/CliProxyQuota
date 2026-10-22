@@ -8,6 +8,13 @@ import QuotaCore
     @Published var lastUpdated: Date?
     @Published var apiVersion: String?
     @Published var showSettings = false
+    @Published var settingsTab = "General"
+    @Published var appearance: AppAppearance { didSet {
+        if !demo {
+            UserDefaults.standard.set(appearance.rawValue, forKey: "appearance")
+            NSApp.appearance = appearance.nativeAppearance
+        }
+    } }
     @Published var selectedView = "All accounts"
     @Published var maximumPopoverHeight: CGFloat = (NSScreen.main?.visibleFrame.height ?? 800) - 24
     @Published var endpoint: String
@@ -54,6 +61,7 @@ import QuotaCore
     init(demo: Bool = false) {
         self.demo = demo
         let defaults = UserDefaults.standard
+        appearance = demo ? .system : AppAppearance(rawValue: defaults.string(forKey: "appearance") ?? "") ?? .system
         endpoint = demo ? "https://proxy.example.com" : defaults.string(forKey: "endpoint") ?? "http://localhost:8317"
         percentageMode = demo ? .remaining : PercentageMode(rawValue: defaults.string(forKey: "percentageMode") ?? "") ?? .remaining
         menuBarWindow = demo ? .both : MenuBarWindow(rawValue: defaults.string(forKey: "menuBarWindow") ?? "") ?? .both
@@ -67,6 +75,7 @@ import QuotaCore
         } else { menuSourceIDs = nil }
         interval = defaults.object(forKey: "interval") as? Double ?? 120
         if demo { quotas = Self.sample; lastUpdated = Date(); apiVersion = "Demo" }
+        else { NSApp.appearance = appearance.nativeAppearance }
     }
     func start() {
         guard !demo else { return }
