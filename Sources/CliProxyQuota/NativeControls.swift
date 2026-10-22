@@ -44,12 +44,12 @@ struct SourceMenuButton: NSViewRepresentable {
     }
     func updateNSView(_ button: NSPopUpButton, context: Context) {
         context.coordinator.onToggle = onToggle
-        button.menu = menu(coordinator: context.coordinator)
+        button.menu = menu(coordinator: context.coordinator, dark: button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
     }
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSPopUpButton, context: Context) -> CGSize? {
         CGSize(width: proposal.width ?? 380, height: nsView.intrinsicContentSize.height)
     }
-    func menu(coordinator: SourceCoordinator) -> NSMenu {
+    func menu(coordinator: SourceCoordinator, dark: Bool = false) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
         menu.addItem(withTitle: summary, action: nil, keyEquivalent: "")
@@ -60,7 +60,7 @@ struct SourceMenuButton: NSViewRepresentable {
         func add(_ id: String, _ title: String, provider: String? = nil) {
             let item = NSMenuItem(title: title, action: #selector(SourceCoordinator.toggle(_:)), keyEquivalent: "")
             item.target = coordinator; item.representedObject = id
-            if let provider { item.image = ProviderArtwork.menuImage(for: provider) }
+            if let provider { item.image = ProviderArtwork.menuImage(for: provider, dark: dark) }
             item.state = selectedIDs.contains(id) ? .on : .off
             menu.addItem(item)
         }

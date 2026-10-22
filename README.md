@@ -27,7 +27,7 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 - **Configurable connection** with the management password stored in macOS Keychain, scoped to the instance URL.
 - **Light and dark mode**, optional launch at login, and no Dock icon.
 - **No third-party dependencies**, analytics, or account-token storage.
-- **Provider icons**: official OpenAI (for Codex), Claude, and Gemini artwork in both quota views and the source menu, with a letter fallback for other providers. Bundled locally for offline use.
+- **Provider icons**: artwork for 17 provider identities in both quota views and the source menu, including light/dark variants where supplied. Unknown custom providers retain a letter fallback. Bundled locally for offline use.
 - **Management UI shortcut**: the external-link icon in the footer opens your configured instance's management page in your browser.
 
 <table>
@@ -98,6 +98,10 @@ HTTPS is the default for remote instances. To use a trusted HTTP instance, expli
 | Gemini CLI | Per-model quota buckets returned by Google Code Assist |
 | Antigravity | Quota summary groups and their reset windows |
 | Other providers | Listed with an explicit unsupported status |
+
+Provider artwork follows the [upstream provider list](https://github.com/router-for-me/CLIProxyAPI#readme) and [management UI assets](https://github.com/router-for-me/Cli-Proxy-API-Management-Center/tree/714de0760a3ce86094b178fb46f834d34bc4a2a5/src/assets/icons): OpenAI, Codex, Claude, Gemini, AI Studio, Vertex AI, Antigravity, Kimi, xAI/Grok, Meta/Muse, and Devin. Icons are also bundled for Qwen and iFlow setups, and compatible DeepSeek, GLM, MiniMax, and OpenRouter providers. Aliases such as `grok`, `muse`, and `moonshot` resolve to the corresponding artwork.
+
+Icon coverage does not add quota readers: the quota support table above still applies. Custom OpenAI-compatible services are open-ended. See [artwork attribution](THIRD_PARTY_NOTICES.md) for sources and licensing.
 
 Google accounts need a `project_id` exposed in their CliProxy credential metadata. An account without one is listed with an explanatory message. API-key accounts without a subscription quota endpoint do not get an invented remaining balance. Provider endpoints are unofficial implementation details and can change.
 

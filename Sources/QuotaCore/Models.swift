@@ -37,15 +37,8 @@ public struct Account: Identifiable, Equatable, Sendable {
         self.name = name; self.email = email; self.disabled = disabled
         self.accountID = accountID; self.projectID = projectID
     }
-    public var providerName: String {
-        switch provider {
-        case "codex": return "Codex"
-        case "claude": return "Claude"
-        case "gemini", "gemini-cli": return "Gemini"
-        case "antigravity": return "Antigravity"
-        default: return provider.capitalized
-        }
-    }
+    public var providerName: String { ProviderIdentity.displayName(provider) }
+
 }
 
 public struct AccountQuota: Identifiable, Equatable, Sendable {
