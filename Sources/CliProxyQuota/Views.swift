@@ -29,7 +29,7 @@ struct QuotaPopover: View {
             }
             .frame(height: viewportHeight)
             .scrollDisabled(contentHeight <= viewportHeight + 0.5)
-            Divider()
+            if store.showSettings { Divider() }
             footer
         }
         .frame(width: 420)
@@ -131,7 +131,7 @@ struct QuotaPopover: View {
                     }
                     QuotaMetrics(windows: q.windows, mode: store.percentageMode)
                 }.padding(.vertical, 13)
-                Divider()
+                if q.id != store.quotas.last?.id { Divider() }
             }
         }
     }
