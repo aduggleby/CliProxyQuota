@@ -16,7 +16,7 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 
 ## A quieter way to watch your limits
 
-- **Remaining usage**, with progress bars and reset countdowns for every reported limit.
+- **Remaining usage**, with progress bars and reset countdowns for every reported limit. Hover over a countdown to see its full reset date and time in your local timezone.
 - **All accounts** groups matching provider quotas and shows their average in the selected percentage mode.
 - **Per account** shows individual windows, including weekly and model-specific limits.
 - **Fits your screen**: both views grow to show all content, scrolling only when the popover would exceed the available display height.

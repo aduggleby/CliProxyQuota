@@ -204,6 +204,8 @@ private struct QuotaMetrics: View {
             }
             QuotaMeter(remaining: window.remaining, mode: mode)
             Text(window.resetLabel()).font(.system(size: 10)).foregroundStyle(.secondary)
+                .help(window.resetsAt.map { "Resets on " + $0.formatted(date: .complete, time: .complete) }
+                    ?? "Reset time unavailable")
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
