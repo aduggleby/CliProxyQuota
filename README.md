@@ -23,6 +23,7 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 - **Remaining or Used**: one preference updates percentages and bars in both quota views and the menu bar.
 - **5-hour, Weekly, or Both** in the menu bar. Single limits show `72%`; Both shows `⁵ʰ 72% · ʷ 84%`.
 - **Checkbox source menu**: select provider averages or individual accounts. Each selected source gets its own menu bar item; clear all selections for icon-only mode.
+- **Provider-wide usage forecast**: one sentence in All accounts estimates whether the combined allowance lasts until reset. Enable or disable it under General and choose a 30-, 60-, or 120-minute averaging period.
 - **Automatic refresh** every 1, 2, 5, or 10 minutes, plus manual refresh.
 - **Configurable connection** with the management password stored in macOS Keychain, scoped to the instance URL.
 - **Light and dark mode**, optional launch at login, and no Dock icon.
@@ -79,7 +80,7 @@ Local builds are **ad-hoc signed**, not Developer ID signed or notarized. Downlo
 5. Under **Tray Display**, choose **Remaining / Used**, **5-hour / Weekly / Both**, and one or more **Source** checkboxes. Changes apply immediately.
 6. Use the back arrow to return to **All accounts** or **Per account**. Both use the selected percentage mode.
 
-Settings has three tabs: **General**, **Connection**, and **Tray Display**. Connection changes use **Save & connect**; a blank management-password field keeps the saved Keychain password for that same instance. Refresh interval, launch-at-login, and **Light / Dark / System (Default)** appearance are under General. Appearance changes apply immediately and are remembered.
+Settings has three tabs: **General**, **Connection**, and **Tray Display**. Connection changes use **Save & connect**; a blank management-password field keeps the saved Keychain password for that same instance. Refresh interval, launch-at-login, and **Light / Dark / System (Default)** appearance are under General. Appearance changes apply immediately and are remembered. **Usage forecast** and its **Average over** control also live in General; disabling it clears forecast history and stops collecting samples.
 
 The management API must be enabled. Connections from another machine require remote management to be allowed on the server. Your Mac must be able to resolve and reach the URL, including any required VPN.
 
@@ -90,7 +91,7 @@ HTTPS is the default for remote instances. To use a trusted HTTP instance, expli
 <table>
 <tr><td align="center"><strong>General</strong></td><td align="center"><strong>Connection</strong></td></tr>
 <tr>
-<td><img src="docs/screenshots/settings-general.png" width="360" alt="General settings with Light, Dark, and System appearance, refresh interval, and launch at login" /></td>
+<td><img src="docs/screenshots/settings-general.png" width="360" alt="General settings with appearance, refresh interval, launch at login, and configurable usage forecasts" /></td>
 <td><img src="docs/screenshots/settings-connection.png" width="360" alt="Connection settings with instance URL, management password, and Save and connect" /></td>
 </tr>
 <tr><td align="center"><strong>Tray Display</strong></td><td align="center"><strong>General in dark mode</strong></td></tr>
@@ -103,6 +104,18 @@ HTTPS is the default for remote instances. To use a trusted HTTP instance, expli
 ### Used mode
 
 <img src="docs/screenshots/overview-used.png" width="420" alt="Used percentages and matching bars across provider quotas" />
+
+## Usage forecast
+
+Forecasts appear only in **All accounts**, beneath each provider. They combine matching quota windows across all enabled, reporting accounts of that provider. Each account’s percentage allowance counts equally, consistent with the overview; plan capacities and routing weights are not available, so this is an estimate rather than a guarantee of transferable capacity.
+
+For each window, the app divides the sum of remaining percentage points by the observed drop per second, including idle intervals, and compares the result with the **next reported reset among its accounts**. The window projected to run out first supplies the warning: “At current pace you will run out Xm before reset.” If every window has sufficient data and none is projected to run out before its next reset: “At current pace your limits will reset in time.” Remaining/Used display preferences do not change this calculation.
+
+The default averaging period is **60 minutes**, configurable to **30 / 60 / 120** under General. Estimates require at least four samples spanning half the selected period: 15, 30, or 60 minutes respectively. Until then the app shows “Learning your usage pace…”. Failed account checks, missing/past reset dates, or stale data suppress the verdict. Changes to account membership, allowance increases, reset dates, or long gaps restart learning. Usage outside the app’s observation period cannot be reconstructed.
+
+History is kept locally and pruned to the last 24 hours whenever samples are recorded, with opaque hashes for instance/provider/window and account membership, summed percentages, timestamps, and reset dates. It contains no account emails, credentials, or tokens. Switching instances clears it. Disabling the feature hides forecasts, stops collection, and deletes the local history file. No additional network requests are made.
+
+<img src="docs/screenshots/overview-forecast-off.png" width="390" alt="All accounts with usage forecasts disabled" />
 
 ## Provider support
 

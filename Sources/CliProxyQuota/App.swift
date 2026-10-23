@@ -105,6 +105,8 @@ import QuotaCore
             ("settings-general", "All accounts", true, false),
             ("settings-general-dark", "All accounts", true, true),
             ("overview-dark", "All accounts", false, true),
+            ("overview-forecast-off", "All accounts", false, false),
+            ("settings-forecast-off", "All accounts", true, false),
             ("overview-used", "All accounts", false, false),
             ("accounts-used", "Per account", false, false)
         ] {
@@ -115,6 +117,7 @@ import QuotaCore
             if name.hasPrefix("settings-general") { store.settingsTab = "General" }
             if name == "settings" { store.settingsTab = "Tray Display" }
             if name.hasSuffix("used") { store.percentageMode = .used }
+            if name.hasSuffix("forecast-off") { store.forecastEnabled = false }
             let controller = NSHostingController(rootView: QuotaPopover(store: store,
                 expandedInitially: tab == "Per account" ? ["demo-codex-1"] : [])
                 .environment(\.colorScheme, dark ? .dark : .light))
@@ -193,6 +196,23 @@ import QuotaCore
             window.orderOut(nil)
         }
         let store = QuotaStore(demo: true)
+        let codex = ProviderForecast.observations(for: "Codex", quotas: store.quotas, endpoint: store.endpoint)!
+        try check(codex.first(where: { $0.key == ProviderForecast.digest([store.endpoint, "Codex", "5-hour"]) })?.remaining == 120,
+            "Forecast must sum both Codex account allowances")
+        try check(store.forecast(for: "Codex").isWarning, "Combined recent Codex pace should warn")
+        try check(store.forecast(for: "Claude") == .inTime, "Claude allowance should reset in time")
+        var failed = store.quotas
+        failed[0].issue = "Unavailable"
+        try check(ProviderForecast.observations(for: "Codex", quotas: failed, endpoint: store.endpoint) == nil,
+            "Partial provider coverage must not produce a pooled forecast")
+        let firstKey = codex[0].key
+        try check(!ProviderForecast.observations(for: "Codex", quotas: store.quotas, endpoint: "https://other.example")!.contains(where: { $0.key == firstKey }),
+            "Forecast history must be isolated by instance")
+        store.forecastLookback = .oneTwenty
+        try check(store.forecast(for: "Codex") == .inTime, "Longer averaging should smooth the recent burst")
+        store.forecastEnabled = false
+        try check(!store.forecastEnabled, "Forecast preference must switch off immediately")
+        print("Verified provider sums, incomplete coverage, instance isolation, and configurable forecasts")
         let coordinator = SourceCoordinator()
         coordinator.onToggle = store.toggleSource
         func menu() -> NSMenu {

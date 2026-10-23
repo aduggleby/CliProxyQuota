@@ -102,6 +102,15 @@ struct QuotaPopover: View {
                         }
                     }
                     QuotaMetrics(windows: pools.map { QuotaWindow(id: $0.id, label: $0.label, remaining: $0.remaining, resetsAt: $0.nextReset) }, mode: store.percentageMode)
+                    if store.forecastEnabled {
+                        TimelineView(.periodic(from: .now, by: 30)) { context in
+                            let forecast = store.forecast(for: provider, now: context.date)
+                            Text(forecast.message).font(.system(size: 11))
+                                .foregroundStyle(forecast.isWarning ? Color.orange : Color.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .help("Combined pace across this provider’s accounts over the last \(store.forecastLookback.rawValue) minutes. Each account’s allowance counts equally. Assumes this pace continues until the next reported reset.")
+                        }
+                    }
                 }.padding(.vertical, 13)
                 if provider != providers.last { Divider() }
             }
@@ -120,11 +129,10 @@ struct QuotaPopover: View {
                 VStack(alignment: .leading, spacing: 13) {
                     HStack(spacing: 9) {
                         ProviderIcon(provider: q.account.provider)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(q.account.providerName).font(.system(size: 12, weight: .semibold))
-                            Text(q.account.email).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
-                        }
-                        Spacer(minLength: 0)
+                        Text(q.account.providerName).font(.system(size: 12, weight: .semibold))
+                        Spacer(minLength: 8)
+                        Text(q.account.email).font(.system(size: 11)).foregroundStyle(.secondary)
+                            .lineLimit(1).truncationMode(.middle)
                     }
                     if let issue = q.issue {
                         Text(issue).font(.system(size: 11)).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
@@ -314,6 +322,21 @@ struct SettingsView: View {
                         if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
                     } catch { self.error = "Login item could not be updated. Check System Settings → General → Login Items." }
                 }
+            Divider()
+            HStack {
+                Text("Usage forecast")
+                Spacer()
+                Toggle("Usage forecast", isOn: $store.forecastEnabled).labelsHidden().toggleStyle(.switch)
+            }.font(.system(size: 12, weight: .medium))
+            HStack {
+                Text("Average over")
+                Spacer()
+                SettingsSegments(values: ForecastLookback.allCases, title: { $0.title }, selection: $store.forecastLookback)
+                    .frame(width: 216).accessibilityLabel("Forecast averaging period")
+                    .disabled(!store.forecastEnabled)
+            }.font(.system(size: 12))
+            Text("Combined usage across each provider’s accounts. Shown in All accounts only.")
+                .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if let error { Text(error).font(.system(size: 11)).foregroundStyle(.orange) }
         }
     }

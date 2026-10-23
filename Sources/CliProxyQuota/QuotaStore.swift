@@ -9,6 +9,44 @@ import QuotaCore
     @Published var apiVersion: String?
     @Published var showSettings = false
     @Published var settingsTab = "General"
+    @Published var forecastEnabled: Bool { didSet {
+        guard !demo else { return }
+        UserDefaults.standard.set(forecastEnabled, forKey: "forecastEnabled")
+        if forecastEnabled {
+            if !isStale, let lastUpdated { recordForecast(at: lastUpdated) }
+        } else { forecastHistory = ForecastHistory(); ProviderForecast.clear() }
+    } }
+    @Published var forecastLookback: ForecastLookback { didSet {
+        if !demo { UserDefaults.standard.set(forecastLookback.rawValue, forKey: "forecastLookback") }
+    } }
+    @Published private var forecastHistory = ForecastHistory()
+    private var forecastMaximumGap: TimeInterval { max(300, interval * 2.5) }
+    func forecast(for provider: String, now: Date = Date()) -> UsageForecast {
+        guard !isStale, let observations = ProviderForecast.observations(for: provider, quotas: quotas, endpoint: endpoint) else { return .unavailable }
+        return forecastHistory.forecast(observations, lookback: forecastLookback, now: now, maximumGap: forecastMaximumGap)
+    }
+    private func recordForecast(at date: Date) {
+        guard forecastEnabled else { return }
+        let observations = Set(quotas.map { $0.account.providerName }).flatMap {
+            ProviderForecast.observations(for: $0, quotas: quotas, endpoint: endpoint) ?? []
+        }
+        forecastHistory.record(observations, at: date, maximumGap: forecastMaximumGap)
+        if !demo { ProviderForecast.save(forecastHistory) }
+    }
+    private func seedDemoForecasts(at now: Date) {
+        let providers = Set(quotas.map { $0.account.providerName })
+        for minutesAgo in stride(from: 120, through: 0, by: -2) {
+            let observations = providers.flatMap { provider in
+                (ProviderForecast.observations(for: provider, quotas: quotas, endpoint: endpoint) ?? []).map { observation in
+                    let isCodexShort = provider == "Codex" && observation.key == ProviderForecast.digest([endpoint, provider, "5-hour"])
+                    let extra = isCodexShort ? 90 * Double(min(40, minutesAgo)) / 60 : Double(minutesAgo) / 60
+                    return ForecastObservation(key: observation.key, cohort: observation.cohort,
+                        remaining: observation.remaining + extra, reset: observation.reset, cycleResets: observation.cycleResets)
+                }
+            }
+            forecastHistory.record(observations, at: now.addingTimeInterval(-Double(minutesAgo) * 60), maximumGap: 300)
+        }
+    }
     @Published var appearance: AppAppearance { didSet {
         if !demo {
             UserDefaults.standard.set(appearance.rawValue, forKey: "appearance")
@@ -61,6 +99,8 @@ import QuotaCore
     init(demo: Bool = false) {
         self.demo = demo
         let defaults = UserDefaults.standard
+        forecastEnabled = demo ? true : defaults.object(forKey: "forecastEnabled") as? Bool ?? true
+        forecastLookback = demo ? .sixty : ForecastLookback(rawValue: defaults.integer(forKey: "forecastLookback")) ?? .sixty
         appearance = demo ? .system : AppAppearance(rawValue: defaults.string(forKey: "appearance") ?? "") ?? .system
         endpoint = demo ? "https://proxy.example.com" : defaults.string(forKey: "endpoint") ?? "http://localhost:8317"
         percentageMode = demo ? .remaining : PercentageMode(rawValue: defaults.string(forKey: "percentageMode") ?? "") ?? .remaining
@@ -74,8 +114,9 @@ import QuotaCore
             else { menuSourceIDs = nil }
         } else { menuSourceIDs = nil }
         interval = defaults.object(forKey: "interval") as? Double ?? 120
-        if demo { quotas = Self.sample; lastUpdated = Date(); apiVersion = "Demo" }
-        else { NSApp.appearance = appearance.nativeAppearance }
+        if demo { quotas = Self.sample; lastUpdated = Date(); apiVersion = "Demo"; seedDemoForecasts(at: lastUpdated!) }
+        else if forecastEnabled { forecastHistory = ProviderForecast.load() }
+        if !demo { NSApp.appearance = appearance.nativeAppearance }
     }
     func start() {
         guard !demo else { return }
@@ -114,6 +155,7 @@ import QuotaCore
                 quotas = result.sorted { ($0.account.providerName, $0.account.email) < ($1.account.providerName, $1.account.email) }
                 apiVersion = api == .v8 ? "API v8" : "Legacy API"
                 issue = nil; lastUpdated = Date()
+                recordForecast(at: lastUpdated!)
             } catch {
                 guard !Task.isCancelled, epoch == generation else { return }
                 issue = ProxyClient.message(for: error)
@@ -128,7 +170,10 @@ import QuotaCore
         try Keychain.save(key, for: base.absoluteString)
         generation += 1; refreshTask?.cancel(); refreshing = false
         quotas = []; lastUpdated = nil; issue = nil
-        if endpoint != base.absoluteString { menuSourceIDs = nil }
+        if endpoint != base.absoluteString {
+            menuSourceIDs = nil
+            forecastHistory = ForecastHistory(); ProviderForecast.clear()
+        }
         endpoint = base.absoluteString
         UserDefaults.standard.set(allowInsecureHTTP ? endpoint : "", forKey: "insecureEndpoint")
         UserDefaults.standard.set(endpoint, forKey: "endpoint")
@@ -144,10 +189,10 @@ import QuotaCore
         }
         return [
             AccountQuota(account: account("demo-codex-1", "codex", "alex@personal.example"), windows: [
-                QuotaWindow(id: "5-hour", label: "5-hour", remaining: 86, resetsAt: now.addingTimeInterval(8280)),
+                QuotaWindow(id: "5-hour", label: "5-hour", remaining: 32, resetsAt: now.addingTimeInterval(8280)),
                 QuotaWindow(id: "Weekly", label: "Weekly", remaining: 92, resetsAt: now.addingTimeInterval(183600))]),
             AccountQuota(account: account("demo-codex-2", "codex", "automation@work.example"), windows: [
-                QuotaWindow(id: "5-hour", label: "5-hour", remaining: 58, resetsAt: now.addingTimeInterval(13320)),
+                QuotaWindow(id: "5-hour", label: "5-hour", remaining: 88, resetsAt: now.addingTimeInterval(13320)),
                 QuotaWindow(id: "Weekly", label: "Weekly", remaining: 76, resetsAt: now.addingTimeInterval(356400))]),
             AccountQuota(account: account("demo-claude", "claude", "alex@work.example"), windows: [
                 QuotaWindow(id: "five_hour", label: "5-hour", remaining: 18, resetsAt: now.addingTimeInterval(2880)),
