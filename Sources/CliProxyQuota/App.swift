@@ -165,6 +165,12 @@ import QuotaCore
             let controller = NSHostingController(rootView: QuotaPopover(store: store,
                 expandedInitially: Set(store.quotas.map(\.id))))
             let window = await prepare(controller)
+            func descendants(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(descendants) }
+            let resetLabels = descendants(controller.view).compactMap { $0 as? NSTextField }
+                .filter { $0.toolTip?.hasPrefix("Resets on ") == true }
+            let expectedLabels = tab == "All accounts" ? store.pools.count : store.quotas.reduce(0) { $0 + $1.windows.count }
+            try check(resetLabels.count == expectedLabels, "Every reset countdown needs an independent native tooltip")
+            try check(resetLabels.allSatisfy { $0.bounds.width > 0 && $0.bounds.height > 0 }, "Tooltip hover regions must have visible bounds")
             let natural = controller.view.fittingSize.height
             try check(natural > 500 && natural < 1200, "\(tab) must fit full expanded content on a tall display: \(natural)")
             store.maximumPopoverHeight = 500

@@ -203,8 +203,8 @@ private struct QuotaMetrics: View {
                     .foregroundStyle(window.remaining <= 20 ? Color.orange : Color.primary)
             }
             QuotaMeter(remaining: window.remaining, mode: mode)
-            Text(window.resetLabel()).font(.system(size: 10)).foregroundStyle(.secondary)
-                .help(window.resetsAt.map { "Resets on " + $0.formatted(date: .complete, time: .complete) }
+            ResetTimeLabel(text: window.resetLabel(),
+                tooltip: window.resetsAt.map { "Resets on " + $0.formatted(date: .complete, time: .complete) }
                     ?? "Reset time unavailable")
         }.frame(maxWidth: .infinity, alignment: .leading)
     }

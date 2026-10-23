@@ -80,3 +80,29 @@ final class SourceCoordinator: NSObject {
         if let id = sender.representedObject as? String { onToggle(id) }
     }
 }
+
+/// Separate AppKit labels prevent SwiftUI's Grid from merging adjacent tooltip regions.
+struct ResetTimeLabel: NSViewRepresentable {
+    let text: String
+    let tooltip: String
+    func makeNSView(context: Context) -> NSTextField {
+        let label = NSTextField(wrappingLabelWithString: text)
+        label.font = .systemFont(ofSize: 10)
+        label.textColor = .secondaryLabelColor
+        label.isSelectable = false
+        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return label
+    }
+    func updateNSView(_ label: NSTextField, context: Context) {
+        label.stringValue = text
+        label.toolTip = tooltip
+        label.setAccessibilityLabel(text)
+        label.setAccessibilityHelp(tooltip)
+    }
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSTextField, context: Context) -> CGSize? {
+        let width = max(1, proposal.width ?? 180)
+        let rect = NSAttributedString(string: text, attributes: [.font: NSFont.systemFont(ofSize: 10)])
+            .boundingRect(with: NSSize(width: width, height: 1000), options: [.usesLineFragmentOrigin, .usesFontLeading])
+        return CGSize(width: width, height: max(13, ceil(rect.height)))
+    }
+}
