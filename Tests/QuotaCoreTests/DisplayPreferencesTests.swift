@@ -84,7 +84,8 @@ final class DisplayPreferencesTests: XCTestCase {
     func testWarningThresholdsAndMissingValues() {
         XCTAssertEqual(TrayQuotaSeverity.forRemaining(0), .critical)
         XCTAssertEqual(TrayQuotaSeverity.forRemaining(9.99), .critical)
-        XCTAssertEqual(TrayQuotaSeverity.forRemaining(10), .warning)
+        XCTAssertEqual(TrayQuotaSeverity.forRemaining(10), .critical)
+        XCTAssertEqual(TrayQuotaSeverity.forRemaining(10.01), .warning)
         XCTAssertEqual(TrayQuotaSeverity.forRemaining(25), .warning)
         XCTAssertEqual(TrayQuotaSeverity.forRemaining(25.01), .normal)
         XCTAssertEqual(TrayQuotaSeverity.forRemaining(nil), .normal)

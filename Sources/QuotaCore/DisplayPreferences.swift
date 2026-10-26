@@ -111,7 +111,7 @@ public enum TrayQuotaSeverity: Equatable, Sendable {
     case normal, warning, critical
     public static func forRemaining(_ value: Double?) -> Self {
         guard let value, value.isFinite else { return .normal }
-        if value < 10 { return .critical }
+        if value <= 10 { return .critical }
         if value <= 25 { return .warning }
         return .normal
     }

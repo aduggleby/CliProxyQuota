@@ -184,9 +184,9 @@ import QuotaCore
         let yellowRange = (coloredTitle.string as NSString).range(of: "80%")
         let redRange = (coloredTitle.string as NSString).range(of: "95%")
         try check(coloredTitle.attribute(.backgroundColor, at: yellowRange.location, effectiveRange: nil) as? NSColor == MenuBarAppearance.warningBackground,
-            "Tray 10–25 percent remaining must use a yellow badge even in Used mode")
+            "Tray above 10 through 25 percent remaining must use a yellow badge even in Used mode")
         try check(coloredTitle.attribute(.backgroundColor, at: redRange.location, effectiveRange: nil) as? NSColor == MenuBarAppearance.criticalBackground,
-            "Tray below 10 percent remaining must use a red badge independently")
+            "Tray at or below 10 percent remaining must use a red badge independently")
         for token in ["80%", "95%", "⁵ʰ", "ʷ"] {
             let range = (coloredTitle.string as NSString).range(of: token)
             try check(coloredTitle.attribute(.foregroundColor, at: range.location, effectiveRange: nil) as? NSColor == .white,
@@ -198,6 +198,10 @@ import QuotaCore
             let luminance = 0.2126 * linear(c.redComponent) + 0.7152 * linear(c.greenComponent) + 0.0722 * linear(c.blueComponent)
             try check(1.05 / (luminance + 0.05) >= 4.5, "White badge text must have at least 4.5:1 contrast")
         }
+        let boundaryBadge = MenuBarAppearance.title(for: MenuBarReadout(id: "boundary", title: "x", detail: "x", fiveHour: 10, weekly: nil), mode: .remaining, window: .fiveHour)
+        let boundaryRange = (boundaryBadge.string as NSString).range(of: "10%")
+        try check(boundaryBadge.attribute(.backgroundColor, at: boundaryRange.location, effectiveRange: nil) as? NSColor == MenuBarAppearance.criticalBackground,
+            "Exactly ten percent remaining must have a red background")
         let normalTitle = MenuBarAppearance.title(for: MenuBarReadout(id: "normal", title: "x", detail: "x", fiveHour: 80, weekly: nil), mode: .remaining, window: .both)
         try check(normalTitle.attribute(.foregroundColor, at: 4, effectiveRange: nil) as? NSColor == .labelColor,
             "Healthy and unavailable tray readings must retain the standard text color")

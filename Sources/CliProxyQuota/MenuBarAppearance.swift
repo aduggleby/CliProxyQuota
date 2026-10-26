@@ -17,10 +17,12 @@ enum MenuBarAppearance {
             guard severity != .normal else {
                 text.append(NSAttributedString(string: value, attributes: normal)); return
             }
-            text.append(NSAttributedString(string: " " + value + " ", attributes: [
+            text.append(NSAttributedString(string: " ", attributes: normal))
+            text.append(NSAttributedString(string: "  " + value + "  ", attributes: [
                 .font: font, .foregroundColor: NSColor.white,
                 .backgroundColor: severity == .warning ? warningBackground : criticalBackground
             ]))
+            text.append(NSAttributedString(string: " ", attributes: normal))
         }
         switch window {
         case .fiveHour: append(readout.fiveHour)
