@@ -23,7 +23,7 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 - **Remaining or Used**: one preference updates percentages and bars in both quota views and the menu bar.
 - **5-hour, Weekly, or Both** in the menu bar. Single limits show `72%`; Both shows `⁵ʰ 72% · ʷ 84%`.
 - **Weekly-aware tray quota**: each account contributes the lower of its 5-hour and weekly remaining percentages to the tray’s 5-hour average. A weekly-exhausted account contributes 0%, even if its 5-hour window is full.
-- **Tray warning colors**: each percentage turns yellow at 10–25% remaining and red below 10%. Colors always reflect remaining capacity, including in Used mode.
+- **Tray warning badges**: each percentage and its window label use white text on a dark yellow/gold background at 10–25% remaining and a red background below 10%. Colors always reflect remaining capacity, including in Used mode.
 - **Checkbox source menu**: select provider averages or individual accounts. Each selected source gets its own menu bar item; clear all selections for icon-only mode.
 - **Provider-wide usage forecast**: one sentence in All accounts estimates whether the combined allowance lasts until reset. Enable or disable it under General and choose a 30-, 60-, or 120-minute averaging period.
 - **Automatic refresh** every 1, 2, 5, or 10 minutes, plus manual refresh.
@@ -34,6 +34,8 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 - **Three-dot menu**: Refresh, Open management UI, API version, and Quit are grouped in the bottom-right menu.
 
 ## Screenshots
+
+<img src="docs/screenshots/tray-badges.png" width="420" alt="Tray warning badges with white percentage labels on red and yellow backgrounds, in Remaining and Used modes" />
 
 <table>
 <tr>

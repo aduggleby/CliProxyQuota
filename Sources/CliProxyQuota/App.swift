@@ -97,6 +97,7 @@ import QuotaCore
 @MainActor enum Screenshots {
     static func write(to directory: URL) async throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try writeTrayPreview(to: directory)
         for (name, tab, settings, dark) in [
             ("overview", "All accounts", false, false),
             ("accounts", "Per account", false, false),
@@ -132,6 +133,26 @@ import QuotaCore
             window.orderOut(nil)
         }
     }
+    private static func writeTrayPreview(to directory: URL) throws {
+        let image = NSImage(size: NSSize(width: 420, height: 100))
+        image.lockFocus()
+        NSAppearance(named: .aqua)!.performAsCurrentDrawingAppearance {
+            NSColor.windowBackgroundColor.setFill()
+            NSBezierPath(rect: NSRect(x: 0, y: 0, width: 420, height: 100)).fill()
+            let sample = MenuBarReadout(id: "preview", title: "Claude", detail: "Sample data", fiveHour: 8, weekly: 23)
+            for (mode, y) in [(PercentageMode.remaining, CGFloat(63)), (.used, CGFloat(23))] {
+                (mode.title as NSString).draw(at: NSPoint(x: 20, y: y), withAttributes: [
+                    .font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor])
+                QuotaBotIcon.menuBar.draw(in: NSRect(x: 130, y: y - 1, width: 18, height: 18))
+                MenuBarAppearance.title(for: sample, mode: mode, window: .both)
+                    .draw(at: NSPoint(x: 155, y: y))
+            }
+        }
+        image.unlockFocus()
+        guard let tiff = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiff),
+              let data = bitmap.representation(using: .png, properties: [:]) else { throw CocoaError(.fileWriteUnknown) }
+        try data.write(to: directory.appendingPathComponent("tray-badges.png"))
+    }
     private static func prepare<V: View>(_ controller: NSHostingController<V>, dark: Bool = false) async -> NSWindow {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 420, height: 600),
             styleMask: [.borderless], backing: .buffered, defer: false)
@@ -162,14 +183,25 @@ import QuotaCore
         let coloredTitle = MenuBarAppearance.title(for: coloredReadout, mode: .used, window: .both, includeSource: true)
         let yellowRange = (coloredTitle.string as NSString).range(of: "80%")
         let redRange = (coloredTitle.string as NSString).range(of: "95%")
-        try check(coloredTitle.attribute(.foregroundColor, at: yellowRange.location, effectiveRange: nil) as? NSColor == .systemYellow,
-            "Tray 10–25 percent remaining must use yellow even in Used mode")
-        try check(coloredTitle.attribute(.foregroundColor, at: redRange.location, effectiveRange: nil) as? NSColor == .systemRed,
-            "Tray below 10 percent remaining must use red independently")
+        try check(coloredTitle.attribute(.backgroundColor, at: yellowRange.location, effectiveRange: nil) as? NSColor == MenuBarAppearance.warningBackground,
+            "Tray 10–25 percent remaining must use a yellow badge even in Used mode")
+        try check(coloredTitle.attribute(.backgroundColor, at: redRange.location, effectiveRange: nil) as? NSColor == MenuBarAppearance.criticalBackground,
+            "Tray below 10 percent remaining must use a red badge independently")
+        for token in ["80%", "95%", "⁵ʰ", "ʷ"] {
+            let range = (coloredTitle.string as NSString).range(of: token)
+            try check(coloredTitle.attribute(.foregroundColor, at: range.location, effectiveRange: nil) as? NSColor == .white,
+                "Both percentage and window label must be white inside warning badges")
+        }
+        for background in [MenuBarAppearance.warningBackground, MenuBarAppearance.criticalBackground] {
+            let c = background.usingColorSpace(.sRGB)!
+            func linear(_ value: CGFloat) -> CGFloat { value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4) }
+            let luminance = 0.2126 * linear(c.redComponent) + 0.7152 * linear(c.greenComponent) + 0.0722 * linear(c.blueComponent)
+            try check(1.05 / (luminance + 0.05) >= 4.5, "White badge text must have at least 4.5:1 contrast")
+        }
         let normalTitle = MenuBarAppearance.title(for: MenuBarReadout(id: "normal", title: "x", detail: "x", fiveHour: 80, weekly: nil), mode: .remaining, window: .both)
         try check(normalTitle.attribute(.foregroundColor, at: 4, effectiveRange: nil) as? NSColor == .labelColor,
             "Healthy and unavailable tray readings must retain the standard text color")
-        print("Verified native tray percentage colors, including Used mode and independent window styling")
+        print("Verified native tray badge backgrounds, white labels, and text contrast")
         for tab in ["All accounts", "Per account"] {
             let store = QuotaStore(demo: true)
             store.maximumPopoverHeight = 1200
