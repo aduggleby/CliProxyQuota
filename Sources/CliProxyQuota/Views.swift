@@ -131,7 +131,15 @@ struct QuotaPopover: View {
                         ProviderIcon(provider: q.account.provider)
                         Text(q.account.providerName).font(.system(size: 12, weight: .semibold))
                         Spacer(minLength: 8)
-                        Text(q.account.email).font(.system(size: 11)).foregroundStyle(.secondary)
+                        Group {
+                            if ProviderIdentity.canonicalKey(q.account.provider) == "claude" {
+                                Link(destination: URL(string: "https://claude.ai/settings/billing")!) {
+                                    Text(q.account.email)
+                                }.buttonStyle(.plain)
+                                    .help("Manage Claude plan. Opens billing for the account signed in to your browser; check that it matches this email.")
+                                    .accessibilityLabel("Manage Claude plan for \(q.account.email) in your browser")
+                            } else { Text(q.account.email) }
+                        }.font(.system(size: 11)).foregroundStyle(.secondary)
                             .lineLimit(1).truncationMode(.middle)
                     }
                     if let issue = q.issue {

@@ -18,7 +18,7 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 
 - **Remaining usage**, with progress bars and reset countdowns for every reported limit. Hover over a countdown to see its full reset date and time in your local timezone.
 - **All accounts** groups matching provider quotas and shows their average in the selected percentage mode.
-- **Per account** shows individual windows, including weekly and model-specific limits.
+- **Per account** shows individual windows, including weekly and model-specific limits. Click a Claude account’s email to open Claude billing in your browser. The link uses the account already signed in to your browser; check that it matches the email shown.
 - **Fits your screen**: both views grow to show all content, scrolling only when the popover would exceed the available display height.
 - **Remaining or Used**: one preference updates percentages and bars in both quota views and the menu bar.
 - **5-hour, Weekly, or Both** in the menu bar. Single limits show `72%`; Both shows `⁵ʰ 72% · ʷ 84%`.
