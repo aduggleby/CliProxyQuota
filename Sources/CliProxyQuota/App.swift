@@ -71,9 +71,11 @@ import QuotaCore
             button.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
             if index < readouts.count {
                 let readout = readouts[index]
-                button.attributedTitle = MenuBarAppearance.title(for: readout, mode: store.percentageMode, window: store.menuBarWindow, includeSource: readouts.count > 1)
+                button.attributedTitle = MenuBarAppearance.title(for: readout, mode: store.percentageMode, window: store.menuBarWindow, includeSource: readouts.count > 1, coloredWarnings: store.trayColorWarnings)
+                let resetText = store.trayColorWarnings ? readout.recoveryText(window: store.menuBarWindow).map { " · " + $0 } ?? "" : ""
+                button.setAccessibilityLabel(readout.text(mode: store.percentageMode, window: store.menuBarWindow, includeSource: readouts.count > 1) + resetText)
                 button.toolTip = (store.demo ? "Demo · " : "") + readout.tooltip(mode: store.percentageMode, window: store.menuBarWindow)
-            } else { button.attributedTitle = NSAttributedString(string: ""); button.toolTip = "CliProxy Quota · click for accounts and Settings" }
+            } else { button.attributedTitle = NSAttributedString(string: ""); button.setAccessibilityLabel("CliProxy Quota"); button.toolTip = "CliProxy Quota · click for accounts and Settings" }
         }
     }
     @objc private func togglePopover(_ sender: NSStatusBarButton? = nil) {
@@ -139,7 +141,7 @@ import QuotaCore
         NSAppearance(named: .aqua)!.performAsCurrentDrawingAppearance {
             NSColor.windowBackgroundColor.setFill()
             NSBezierPath(rect: NSRect(x: 0, y: 0, width: 420, height: 100)).fill()
-            let sample = MenuBarReadout(id: "preview", title: "Claude", detail: "Sample data", fiveHour: 8, weekly: 23)
+            let sample = MenuBarReadout(id: "preview", title: "Claude", detail: "Sample data", fiveHour: 8, weekly: 23, nextUsefulReset: Date().addingTimeInterval(8040))
             for (mode, y) in [(PercentageMode.remaining, CGFloat(63)), (.used, CGFloat(23))] {
                 (mode.title as NSString).draw(at: NSPoint(x: 20, y: y), withAttributes: [
                     .font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor])
@@ -181,17 +183,26 @@ import QuotaCore
         }
         let coloredReadout = MenuBarReadout(id: "colors", title: "Claude", detail: "Preview", fiveHour: 20, weekly: 5)
         let coloredTitle = MenuBarAppearance.title(for: coloredReadout, mode: .used, window: .both, includeSource: true)
-        let yellowRange = (coloredTitle.string as NSString).range(of: "80%")
-        let redRange = (coloredTitle.string as NSString).range(of: "95%")
-        try check(coloredTitle.attribute(.backgroundColor, at: yellowRange.location, effectiveRange: nil) as? NSColor == MenuBarAppearance.warningBackground,
-            "Tray above 10 through 25 percent remaining must use a yellow badge even in Used mode")
-        try check(coloredTitle.attribute(.backgroundColor, at: redRange.location, effectiveRange: nil) as? NSColor == MenuBarAppearance.criticalBackground,
-            "Tray at or below 10 percent remaining must use a red badge independently")
-        for token in ["80%", "95%", "⁵ʰ", "ʷ"] {
-            let range = (coloredTitle.string as NSString).range(of: token)
-            try check(coloredTitle.attribute(.foregroundColor, at: range.location, effectiveRange: nil) as? NSColor == .white,
-                "Both percentage and window label must be white inside warning badges")
+        func badges(_ title: NSAttributedString) -> [[NSAttributedString.Key: Any]] {
+            var result: [[NSAttributedString.Key: Any]] = []
+            title.enumerateAttributes(in: NSRange(location: 0, length: title.length)) { attributes, _, _ in
+                if attributes[.attachment] != nil { result.append(attributes) }
+            }
+            return result
         }
+        let coloredBadges = badges(coloredTitle)
+        try check(coloredBadges.count == 2, "Both windows must have independent rounded badges")
+        try check(coloredBadges[0][MenuBarAppearance.badgeText] as? String == "⁵ʰ 80%" &&
+            coloredBadges[0][MenuBarAppearance.badgeBackground] as? NSColor == MenuBarAppearance.warningBackground,
+            "Five-hour label and used percentage must render in a yellow badge")
+        try check(coloredBadges[1][MenuBarAppearance.badgeText] as? String == "ʷ 95%" &&
+            coloredBadges[1][MenuBarAppearance.badgeBackground] as? NSColor == MenuBarAppearance.criticalBackground,
+            "Weekly label and used percentage must render in a red badge")
+        try check(coloredBadges.allSatisfy { ($0[.attachment] as? NSTextAttachment)?.image?.isValid == true },
+            "Rounded badge images must be valid")
+        let plainTitle = MenuBarAppearance.title(for: coloredReadout, mode: .used, window: .both, includeSource: true, coloredWarnings: false)
+        try check(badges(plainTitle).isEmpty && plainTitle.string == " " + coloredReadout.text(mode: .used, window: .both, includeSource: true),
+            "Disabling color styling must restore plain tray labels and percentages")
         for background in [MenuBarAppearance.warningBackground, MenuBarAppearance.criticalBackground] {
             let c = background.usingColorSpace(.sRGB)!
             func linear(_ value: CGFloat) -> CGFloat { value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4) }
@@ -199,13 +210,12 @@ import QuotaCore
             try check(1.05 / (luminance + 0.05) >= 4.5, "White badge text must have at least 4.5:1 contrast")
         }
         let boundaryBadge = MenuBarAppearance.title(for: MenuBarReadout(id: "boundary", title: "x", detail: "x", fiveHour: 10, weekly: nil), mode: .remaining, window: .fiveHour)
-        let boundaryRange = (boundaryBadge.string as NSString).range(of: "10%")
-        try check(boundaryBadge.attribute(.backgroundColor, at: boundaryRange.location, effectiveRange: nil) as? NSColor == MenuBarAppearance.criticalBackground,
+        try check(badges(boundaryBadge).first?[MenuBarAppearance.badgeBackground] as? NSColor == MenuBarAppearance.criticalBackground,
             "Exactly ten percent remaining must have a red background")
         let normalTitle = MenuBarAppearance.title(for: MenuBarReadout(id: "normal", title: "x", detail: "x", fiveHour: 80, weekly: nil), mode: .remaining, window: .both)
         try check(normalTitle.attribute(.foregroundColor, at: 4, effectiveRange: nil) as? NSColor == .labelColor,
             "Healthy and unavailable tray readings must retain the standard text color")
-        print("Verified native tray badge backgrounds, white labels, and text contrast")
+        print("Verified rounded tray badges, plain-text fallback, labels, and text contrast")
         for tab in ["All accounts", "Per account"] {
             let store = QuotaStore(demo: true)
             store.maximumPopoverHeight = 1200

@@ -61,6 +61,7 @@ public struct MenuBarSource: Identifiable, Equatable, Sendable {
         return MenuBarReadout(id: id, title: isProvider ? title : "\(title) · \(detail)",
             detail: isProvider ? "\(title) · account average" : "\(title) · \(detail)",
             fiveHour: average(.fiveHour), weekly: average(.weekly),
+            nextUsefulReset: stale ? nil : QuotaRecovery.nextIncrease(in: matching),
             fiveHourIsWeeklyCapped: !stale && matching.contains { quota in
                 guard quota.issue == nil,
                       let five = quota.windows.first(where: { $0.standardPeriod == .fiveHour }),
@@ -76,10 +77,12 @@ public struct MenuBarReadout: Identifiable, Equatable, Sendable {
     public let detail: String
     public let fiveHour: Double?
     public let weekly: Double?
+    public let nextUsefulReset: Date?
     public let fiveHourIsWeeklyCapped: Bool
-    public init(id: String, title: String, detail: String, fiveHour: Double?, weekly: Double?, fiveHourIsWeeklyCapped: Bool = false) {
+    public init(id: String, title: String, detail: String, fiveHour: Double?, weekly: Double?, nextUsefulReset: Date? = nil, fiveHourIsWeeklyCapped: Bool = false) {
         self.id = id; self.title = title; self.detail = detail; self.fiveHour = fiveHour; self.weekly = weekly
         self.fiveHourIsWeeklyCapped = fiveHourIsWeeklyCapped
+        self.nextUsefulReset = nextUsefulReset
     }
     public func text(mode: PercentageMode, window: MenuBarWindow, includeSource: Bool = false) -> String {
         parts(mode: mode, window: window, includeSource: includeSource).map(\.text).joined()
@@ -97,13 +100,32 @@ public struct MenuBarReadout: Identifiable, Equatable, Sendable {
         }
         return result
     }
+    public func hasCriticalReading(window: MenuBarWindow) -> Bool {
+        let values = window == .fiveHour ? [fiveHour] : window == .weekly ? [weekly] : [fiveHour, weekly]
+        return values.contains { $0 != nil && TrayQuotaSeverity.forRemaining($0) == .critical }
+    }
+    public func recoveryText(window: MenuBarWindow, now: Date = Date()) -> String? {
+        guard hasCriticalReading(window: window) else { return nil }
+        guard let date = nextUsefulReset else { return "↻ —" }
+        let seconds = date.timeIntervalSince(now)
+        guard seconds > 0 else { return "↻ due" }
+        let minutes = max(1, Int(ceil(seconds / 60)))
+        if minutes < 60 { return "↻ \(minutes)m" }
+        if minutes < 1440 { return "↻ \(minutes / 60)h \(minutes % 60)m" }
+        return "↻ \(minutes / 1440)d \((minutes % 1440) / 60)h"
+    }
     public func tooltip(mode: PercentageMode, window: MenuBarWindow) -> String {
         func describe(_ n: Double?, _ label: String) -> String {
             n.map { "\(label): \(mode.formatted($0)) \(mode.suffix)" } ?? "\(label): unavailable"
         }
         let values = (window == .weekly ? [] : [describe(fiveHour, fiveHourIsWeeklyCapped ? "5-hour (limited by weekly)" : "5-hour")]) +
             (window == .fiveHour ? [] : [describe(weekly, "Weekly")])
-        return ([detail] + values).joined(separator: " · ")
+        var descriptions = [detail] + values
+        if hasCriticalReading(window: window) {
+            descriptions.append(nextUsefulReset.map { "Next usable reset: " + $0.formatted(date: .complete, time: .complete) + " (estimated; refresh confirms capacity)" }
+                ?? "Next usable reset unavailable")
+        }
+        return descriptions.joined(separator: " · ")
     }
 }
 

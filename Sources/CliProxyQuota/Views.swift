@@ -277,6 +277,11 @@ struct SettingsView: View {
                 SettingsSegments(values: MenuBarWindow.allCases, title: { $0.title }, selection: $store.menuBarWindow)
                     .frame(width: 216).accessibilityLabel("Menu bar display")
             }.font(.system(size: 12, weight: .medium))
+            HStack {
+                Text("Color warnings")
+                Spacer()
+                Toggle("Color warnings", isOn: $store.trayColorWarnings).labelsHidden().toggleStyle(.switch)
+            }.font(.system(size: 12, weight: .medium))
             Divider()
             VStack(alignment: .leading, spacing: 8) {
                 Text("Source").font(.system(size: 12, weight: .medium))

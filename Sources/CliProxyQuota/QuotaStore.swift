@@ -53,6 +53,10 @@ import QuotaCore
             NSApp.appearance = appearance.nativeAppearance
         }
     } }
+    @Published var trayColorWarnings: Bool { didSet {
+        if !demo { UserDefaults.standard.set(trayColorWarnings, forKey: "trayColorWarnings") }
+        onChange?()
+    } }
     @Published var selectedView = "All accounts"
     @Published var maximumPopoverHeight: CGFloat = (NSScreen.main?.visibleFrame.height ?? 800) - 24
     @Published var endpoint: String
@@ -99,6 +103,7 @@ import QuotaCore
     init(demo: Bool = false) {
         self.demo = demo
         let defaults = UserDefaults.standard
+        trayColorWarnings = demo ? true : defaults.object(forKey: "trayColorWarnings") as? Bool ?? true
         forecastEnabled = demo ? true : defaults.object(forKey: "forecastEnabled") as? Bool ?? true
         forecastLookback = demo ? .sixty : ForecastLookback(rawValue: defaults.integer(forKey: "forecastLookback")) ?? .sixty
         appearance = demo ? .system : AppAppearance(rawValue: defaults.string(forKey: "appearance") ?? "") ?? .system

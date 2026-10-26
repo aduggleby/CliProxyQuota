@@ -23,7 +23,7 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 - **Remaining or Used**: one preference updates percentages and bars in both quota views and the menu bar.
 - **5-hour, Weekly, or Both** in the menu bar. Single limits show `72%`; Both shows `⁵ʰ 72% · ʷ 84%`.
 - **Weekly-aware tray quota**: each account contributes the lower of its 5-hour and weekly remaining percentages to the tray’s 5-hour average. A weekly-exhausted account contributes 0%, even if its 5-hour window is full.
-- **Tray warning badges**: each percentage and its window label use white text on a dark yellow/gold background above 10% through 25% remaining and a red background at or below 10%. Colors always reflect remaining capacity, including in Used mode.
+- **Tray warning badges**: each percentage and its window label use white text on a rounded dark yellow/gold background above 10% through 25% remaining and a red background at or below 10%. Colors always reflect remaining capacity, including in Used mode. **Color warnings** in Tray Display is on by default; switch it off for plain tray text. A red reading adds a reset countdown for the next reported reset that increases usable capacity.
 - **Checkbox source menu**: select provider averages or individual accounts. Each selected source gets its own menu bar item; clear all selections for icon-only mode.
 - **Provider-wide usage forecast**: one sentence in All accounts estimates whether the combined allowance lasts until reset. Enable or disable it under General and choose a 30-, 60-, or 120-minute averaging period.
 - **Automatic refresh** every 1, 2, 5, or 10 minutes, plus manual refresh.
@@ -112,6 +112,8 @@ HTTPS is the default for remote instances. To use a trusted HTTP instance, expli
 ### Weekly-aware menu bar percentages
 
 For each account with both standard windows, the tray’s 5-hour figure is `min(5-hour remaining, weekly remaining)`. Provider sources average these per-account results; the app never caps a provider average using another provider average. Weekly-only readings remain unchanged. If the API omits the weekly window, the reported 5-hour value is used; missing and stale windows show a dash. Review-specific limits are excluded.
+
+When a displayed reading is red, an extra `↻` segment estimates when usable allowance next increases. The app evaluates each account’s main 5-hour and weekly windows together, then takes the earliest useful recovery across the selected accounts. A weekly-exhausted account ignores a 5-hour reset that leaves weekly allowance at zero; if both windows are empty, both must reset before that account can recover. With nonzero remaining allowance, the countdown identifies the next increase in the lower of the two windows. Missing blocking reset dates show a dash. A past-due reset shows `due` until a quota refresh confirms it. Hover the tray item for the absolute reset time. This segment is hidden when Color warnings is off.
 
 For example, accounts reporting `100% / 0%` and `80% / 60%` contribute `0%` and `60%`, so the provider’s tray 5-hour figure is **30%**. Used mode shows its complement, **70%**. The tooltip identifies when the weekly limit reduces the 5-hour reading. Quota views continue to show each window’s API-reported percentage, and usage forecasts use the observed API values.
 
