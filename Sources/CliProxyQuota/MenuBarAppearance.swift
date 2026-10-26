@@ -29,7 +29,7 @@ enum MenuBarAppearance {
                       includeSource: Bool = false, coloredWarnings: Bool = true, showResetCountdown: Bool = true) -> NSAttributedString {
         let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
         let normal: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.labelColor]
-        let separator = coloredWarnings ? "  " : " · "
+        let separator = coloredWarnings ? " " : " · "
         let text = NSMutableAttributedString(string: " ", attributes: normal)
         if includeSource { text.append(NSAttributedString(string: readout.title + " ", attributes: normal)) }
         func append(_ remaining: Double?, label: String = "") {
@@ -38,7 +38,6 @@ enum MenuBarAppearance {
             guard coloredWarnings && severity != .normal else {
                 text.append(NSAttributedString(string: value, attributes: normal)); return
             }
-            text.append(NSAttributedString(string: " ", attributes: normal))
             let attachment = NSTextAttachment()
             attachment.image = image(text: value, severity: severity)
             attachment.bounds = NSRect(x: 0, y: -4, width: attachment.image!.size.width, height: 18)
@@ -46,7 +45,6 @@ enum MenuBarAppearance {
             badge.addAttributes([badgeText: value, badgeBackground: severity == .warning ? warningBackground : criticalBackground],
                                 range: NSRange(location: 0, length: badge.length))
             text.append(badge)
-            text.append(NSAttributedString(string: " ", attributes: normal))
         }
         switch window {
         case .fiveHour: append(readout.fiveHour)
