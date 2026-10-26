@@ -35,7 +35,9 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 
 ## Screenshots
 
-<img src="docs/screenshots/tray-badges.png" width="420" alt="Tray warning badges with white percentage labels on red and yellow backgrounds, in Remaining and Used modes" />
+<img src="docs/screenshots/tray-badges.png" width="420" alt="Rounded red and yellow tray badges in Remaining and Used modes, with a third segment showing the next useful reset in 2h 14m" />
+
+The `↻ 2h 14m` segment shows the next reset that adds usable capacity across the selected accounts, accounting for both 5-hour and weekly limits.
 
 <table>
 <tr>
@@ -100,7 +102,7 @@ HTTPS is the default for remote instances. To use a trusted HTTP instance, expli
 </tr>
 <tr><td align="center"><strong>Tray Display</strong></td><td align="center"><strong>General in dark mode</strong></td></tr>
 <tr>
-<td><img src="docs/screenshots/settings.png" width="360" alt="Tray Display settings for remaining or used percentages, quota windows, and source selection" /></td>
+<td><img src="docs/screenshots/settings.png" width="360" alt="Tray Display settings with the default-on Color warnings switch, remaining or used percentages, quota windows, and source selection" /></td>
 <td><img src="docs/screenshots/settings-general-dark.png" width="360" alt="General settings using dark appearance" /></td>
 </tr>
 </table>
