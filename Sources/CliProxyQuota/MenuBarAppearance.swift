@@ -29,6 +29,7 @@ enum MenuBarAppearance {
                       includeSource: Bool = false, coloredWarnings: Bool = true, showResetCountdown: Bool = true) -> NSAttributedString {
         let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
         let normal: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.labelColor]
+        let separator = coloredWarnings ? "  " : " · "
         let text = NSMutableAttributedString(string: " ", attributes: normal)
         if includeSource { text.append(NSAttributedString(string: readout.title + " ", attributes: normal)) }
         func append(_ remaining: Double?, label: String = "") {
@@ -52,11 +53,11 @@ enum MenuBarAppearance {
         case .weekly: append(readout.weekly)
         case .both:
             append(readout.fiveHour, label: "⁵ʰ ")
-            text.append(NSAttributedString(string: " · ", attributes: normal))
+            text.append(NSAttributedString(string: separator, attributes: normal))
             append(readout.weekly, label: "ʷ ")
         }
         if showResetCountdown, let recovery = readout.recoveryText(window: window) {
-            text.append(NSAttributedString(string: " · " + recovery, attributes: normal))
+            text.append(NSAttributedString(string: separator + recovery, attributes: normal))
         }
         return text
     }
