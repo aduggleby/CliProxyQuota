@@ -282,6 +282,11 @@ struct SettingsView: View {
                 Spacer()
                 Toggle("Color warnings", isOn: $store.trayColorWarnings).labelsHidden().toggleStyle(.switch)
             }.font(.system(size: 12, weight: .medium))
+            HStack {
+                Text("Reset countdown")
+                Spacer()
+                Toggle("Reset countdown", isOn: $store.trayResetCountdown).labelsHidden().toggleStyle(.switch)
+            }.font(.system(size: 12, weight: .medium))
             Divider()
             VStack(alignment: .leading, spacing: 8) {
                 Text("Source").font(.system(size: 12, weight: .medium))

@@ -53,6 +53,10 @@ import QuotaCore
             NSApp.appearance = appearance.nativeAppearance
         }
     } }
+    @Published var trayResetCountdown: Bool { didSet {
+        if !demo { UserDefaults.standard.set(trayResetCountdown, forKey: "trayResetCountdown") }
+        onChange?()
+    } }
     @Published var trayColorWarnings: Bool { didSet {
         if !demo { UserDefaults.standard.set(trayColorWarnings, forKey: "trayColorWarnings") }
         onChange?()
@@ -103,6 +107,7 @@ import QuotaCore
     init(demo: Bool = false) {
         self.demo = demo
         let defaults = UserDefaults.standard
+        trayResetCountdown = demo ? true : defaults.object(forKey: "trayResetCountdown") as? Bool ?? true
         trayColorWarnings = demo ? true : defaults.object(forKey: "trayColorWarnings") as? Bool ?? true
         forecastEnabled = demo ? true : defaults.object(forKey: "forecastEnabled") as? Bool ?? true
         forecastLookback = demo ? .sixty : ForecastLookback(rawValue: defaults.integer(forKey: "forecastLookback")) ?? .sixty

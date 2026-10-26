@@ -71,8 +71,8 @@ import QuotaCore
             button.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
             if index < readouts.count {
                 let readout = readouts[index]
-                button.attributedTitle = MenuBarAppearance.title(for: readout, mode: store.percentageMode, window: store.menuBarWindow, includeSource: readouts.count > 1, coloredWarnings: store.trayColorWarnings)
-                let resetText = store.trayColorWarnings ? readout.recoveryText(window: store.menuBarWindow).map { " · " + $0 } ?? "" : ""
+                button.attributedTitle = MenuBarAppearance.title(for: readout, mode: store.percentageMode, window: store.menuBarWindow, includeSource: readouts.count > 1, coloredWarnings: store.trayColorWarnings, showResetCountdown: store.trayResetCountdown)
+                let resetText = store.trayResetCountdown ? readout.recoveryText(window: store.menuBarWindow).map { " · " + $0 } ?? "" : ""
                 button.setAccessibilityLabel(readout.text(mode: store.percentageMode, window: store.menuBarWindow, includeSource: readouts.count > 1) + resetText)
                 button.toolTip = (store.demo ? "Demo · " : "") + readout.tooltip(mode: store.percentageMode, window: store.menuBarWindow)
             } else { button.attributedTitle = NSAttributedString(string: ""); button.setAccessibilityLabel("CliProxy Quota"); button.toolTip = "CliProxy Quota · click for accounts and Settings" }
@@ -200,9 +200,15 @@ import QuotaCore
             "Weekly label and used percentage must render in a red badge")
         try check(coloredBadges.allSatisfy { ($0[.attachment] as? NSTextAttachment)?.image?.isValid == true },
             "Rounded badge images must be valid")
-        let plainTitle = MenuBarAppearance.title(for: coloredReadout, mode: .used, window: .both, includeSource: true, coloredWarnings: false)
+        let plainTitle = MenuBarAppearance.title(for: coloredReadout, mode: .used, window: .both, includeSource: true, coloredWarnings: false, showResetCountdown: false)
         try check(badges(plainTitle).isEmpty && plainTitle.string == " " + coloredReadout.text(mode: .used, window: .both, includeSource: true),
             "Disabling color styling must restore plain tray labels and percentages")
+        let independentCountdown = MenuBarAppearance.title(for: coloredReadout, mode: .used, window: .both, coloredWarnings: false)
+        try check(badges(independentCountdown).isEmpty && independentCountdown.string.contains("↻"),
+            "Reset countdown must remain visible with color warnings disabled")
+        let hiddenCountdown = MenuBarAppearance.title(for: coloredReadout, mode: .used, window: .both, showResetCountdown: false)
+        try check(badges(hiddenCountdown).count == 2 && !hiddenCountdown.string.contains("↻"),
+            "Hiding the countdown must preserve color warnings")
         for background in [MenuBarAppearance.warningBackground, MenuBarAppearance.criticalBackground] {
             let c = background.usingColorSpace(.sRGB)!
             func linear(_ value: CGFloat) -> CGFloat { value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4) }

@@ -26,18 +26,15 @@ enum MenuBarAppearance {
         return image
     }
     static func title(for readout: MenuBarReadout, mode: PercentageMode, window: MenuBarWindow,
-                      includeSource: Bool = false, coloredWarnings: Bool = true) -> NSAttributedString {
+                      includeSource: Bool = false, coloredWarnings: Bool = true, showResetCountdown: Bool = true) -> NSAttributedString {
         let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
         let normal: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.labelColor]
-        guard coloredWarnings else {
-            return NSAttributedString(string: " " + readout.text(mode: mode, window: window, includeSource: includeSource), attributes: normal)
-        }
         let text = NSMutableAttributedString(string: " ", attributes: normal)
         if includeSource { text.append(NSAttributedString(string: readout.title + " ", attributes: normal)) }
         func append(_ remaining: Double?, label: String = "") {
             let value = label + (remaining.map { mode.formatted($0) } ?? "—")
             let severity = TrayQuotaSeverity.forRemaining(remaining)
-            guard severity != .normal else {
+            guard coloredWarnings && severity != .normal else {
                 text.append(NSAttributedString(string: value, attributes: normal)); return
             }
             text.append(NSAttributedString(string: " ", attributes: normal))
@@ -58,7 +55,7 @@ enum MenuBarAppearance {
             text.append(NSAttributedString(string: " · ", attributes: normal))
             append(readout.weekly, label: "ʷ ")
         }
-        if let recovery = readout.recoveryText(window: window) {
+        if showResetCountdown, let recovery = readout.recoveryText(window: window) {
             text.append(NSAttributedString(string: " · " + recovery, attributes: normal))
         }
         return text

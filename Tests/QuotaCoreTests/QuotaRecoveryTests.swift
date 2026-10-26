@@ -40,10 +40,10 @@ final class QuotaRecoveryTests: XCTestCase {
         let valid = quota("c", five: 0, weekly: 80, fiveReset: 3600, weekReset: 7200)
         XCTAssertEqual(QuotaRecovery.nextIncrease(in: [failed,disabled,valid]), now.addingTimeInterval(3600))
     }
-    func testReadoutRecoveryOnlyForVisibleCriticalWindow() {
+    func testReadoutRecoveryIndependentOfVisibleCriticalWindow() {
         let value = MenuBarReadout(id: "a", title: "a", detail: "a", fiveHour: 10, weekly: 30, nextUsefulReset: now.addingTimeInterval(8040))
         XCTAssertEqual(value.recoveryText(window: .both, now: now), "↻ 2h 14m")
-        XCTAssertNil(value.recoveryText(window: .weekly, now: now))
+        XCTAssertEqual(value.recoveryText(window: .weekly, now: now), "↻ 2h 14m")
         XCTAssertEqual(value.recoveryText(window: .fiveHour, now: now.addingTimeInterval(8040)), "↻ due")
         let missing = MenuBarReadout(id: "a", title: "a", detail: "a", fiveHour: 0, weekly: 0)
         XCTAssertEqual(missing.recoveryText(window: .both, now: now), "↻ —")

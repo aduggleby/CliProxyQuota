@@ -105,7 +105,6 @@ public struct MenuBarReadout: Identifiable, Equatable, Sendable {
         return values.contains { $0 != nil && TrayQuotaSeverity.forRemaining($0) == .critical }
     }
     public func recoveryText(window: MenuBarWindow, now: Date = Date()) -> String? {
-        guard hasCriticalReading(window: window) else { return nil }
         guard let date = nextUsefulReset else { return "↻ —" }
         let seconds = date.timeIntervalSince(now)
         guard seconds > 0 else { return "↻ due" }
@@ -121,10 +120,8 @@ public struct MenuBarReadout: Identifiable, Equatable, Sendable {
         let values = (window == .weekly ? [] : [describe(fiveHour, fiveHourIsWeeklyCapped ? "5-hour (limited by weekly)" : "5-hour")]) +
             (window == .fiveHour ? [] : [describe(weekly, "Weekly")])
         var descriptions = [detail] + values
-        if hasCriticalReading(window: window) {
-            descriptions.append(nextUsefulReset.map { "Next usable reset: " + $0.formatted(date: .complete, time: .complete) + " (estimated; refresh confirms capacity)" }
-                ?? "Next usable reset unavailable")
-        }
+        descriptions.append(nextUsefulReset.map { "Next usable reset: " + $0.formatted(date: .complete, time: .complete) + " (estimated; refresh confirms capacity)" }
+            ?? "Next usable reset unavailable")
         return descriptions.joined(separator: " · ")
     }
 }
