@@ -71,9 +71,9 @@ import QuotaCore
             button.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
             if index < readouts.count {
                 let readout = readouts[index]
-                button.title = " " + readout.text(mode: store.percentageMode, window: store.menuBarWindow, includeSource: readouts.count > 1)
+                button.attributedTitle = MenuBarAppearance.title(for: readout, mode: store.percentageMode, window: store.menuBarWindow, includeSource: readouts.count > 1)
                 button.toolTip = (store.demo ? "Demo · " : "") + readout.tooltip(mode: store.percentageMode, window: store.menuBarWindow)
-            } else { button.title = ""; button.toolTip = "CliProxy Quota · click for accounts and Settings" }
+            } else { button.attributedTitle = NSAttributedString(string: ""); button.toolTip = "CliProxy Quota · click for accounts and Settings" }
         }
     }
     @objc private func togglePopover(_ sender: NSStatusBarButton? = nil) {
@@ -158,6 +158,18 @@ import QuotaCore
         func check(_ condition: Bool, _ message: String) throws {
             if !condition { throw NSError(domain: "PopoverLayout", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
         }
+        let coloredReadout = MenuBarReadout(id: "colors", title: "Claude", detail: "Preview", fiveHour: 20, weekly: 5)
+        let coloredTitle = MenuBarAppearance.title(for: coloredReadout, mode: .used, window: .both, includeSource: true)
+        let yellowRange = (coloredTitle.string as NSString).range(of: "80%")
+        let redRange = (coloredTitle.string as NSString).range(of: "95%")
+        try check(coloredTitle.attribute(.foregroundColor, at: yellowRange.location, effectiveRange: nil) as? NSColor == .systemYellow,
+            "Tray 10–25 percent remaining must use yellow even in Used mode")
+        try check(coloredTitle.attribute(.foregroundColor, at: redRange.location, effectiveRange: nil) as? NSColor == .systemRed,
+            "Tray below 10 percent remaining must use red independently")
+        let normalTitle = MenuBarAppearance.title(for: MenuBarReadout(id: "normal", title: "x", detail: "x", fiveHour: 80, weekly: nil), mode: .remaining, window: .both)
+        try check(normalTitle.attribute(.foregroundColor, at: 4, effectiveRange: nil) as? NSColor == .labelColor,
+            "Healthy and unavailable tray readings must retain the standard text color")
+        print("Verified native tray percentage colors, including Used mode and independent window styling")
         for tab in ["All accounts", "Per account"] {
             let store = QuotaStore(demo: true)
             store.maximumPopoverHeight = 1200

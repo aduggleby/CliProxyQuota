@@ -22,6 +22,8 @@ A small, native macOS app for [CLIProxyAPI](https://github.com/router-for-me/CLI
 - **Fits your screen**: both views grow to show all content, scrolling only when the popover would exceed the available display height.
 - **Remaining or Used**: one preference updates percentages and bars in both quota views and the menu bar.
 - **5-hour, Weekly, or Both** in the menu bar. Single limits show `72%`; Both shows `⁵ʰ 72% · ʷ 84%`.
+- **Weekly-aware tray quota**: each account contributes the lower of its 5-hour and weekly remaining percentages to the tray’s 5-hour average. A weekly-exhausted account contributes 0%, even if its 5-hour window is full.
+- **Tray warning colors**: each percentage turns yellow at 10–25% remaining and red below 10%. Colors always reflect remaining capacity, including in Used mode.
 - **Checkbox source menu**: select provider averages or individual accounts. Each selected source gets its own menu bar item; clear all selections for icon-only mode.
 - **Provider-wide usage forecast**: one sentence in All accounts estimates whether the combined allowance lasts until reset. Enable or disable it under General and choose a 30-, 60-, or 120-minute averaging period.
 - **Automatic refresh** every 1, 2, 5, or 10 minutes, plus manual refresh.
@@ -104,6 +106,12 @@ HTTPS is the default for remote instances. To use a trusted HTTP instance, expli
 ### Used mode
 
 <img src="docs/screenshots/overview-used.png" width="420" alt="Used percentages and matching bars across provider quotas" />
+
+### Weekly-aware menu bar percentages
+
+For each account with both standard windows, the tray’s 5-hour figure is `min(5-hour remaining, weekly remaining)`. Provider sources average these per-account results; the app never caps a provider average using another provider average. Weekly-only readings remain unchanged. If the API omits the weekly window, the reported 5-hour value is used; missing and stale windows show a dash. Review-specific limits are excluded.
+
+For example, accounts reporting `100% / 0%` and `80% / 60%` contribute `0%` and `60%`, so the provider’s tray 5-hour figure is **30%**. Used mode shows its complement, **70%**. The tooltip identifies when the weekly limit reduces the 5-hour reading. Quota views continue to show each window’s API-reported percentage, and usage forecasts use the observed API values.
 
 ## Usage forecast
 

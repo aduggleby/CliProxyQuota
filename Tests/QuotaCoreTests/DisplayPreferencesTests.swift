@@ -50,8 +50,52 @@ final class DisplayPreferencesTests: XCTestCase {
         let quotas = [quota("a", five: 80, weekly: nil), quota("b", five: 60, weekly: 30)]
         let source = try XCTUnwrap(MenuBarSource.options(from: quotas).first { $0.id == "provider:codex" })
         let value = source.readout(from: quotas, stale: false)
-        XCTAssertEqual(value.fiveHour, 70); XCTAssertEqual(value.weekly, 30)
+        XCTAssertEqual(value.fiveHour, 55); XCTAssertEqual(value.weekly, 30)
         XCTAssertNil(source.readout(from: quotas, stale: true).weekly)
         XCTAssertNil(source.readout(from: [], stale: false).fiveHour)
     }
+    func testWeeklyExhaustedAccountContributesZeroToFiveHourAverage() throws {
+        let quotas = [quota("a", five: 100, weekly: 0), quota("b", five: 80, weekly: 60)]
+        let sources = MenuBarSource.options(from: quotas)
+        let provider = try XCTUnwrap(sources.first { $0.id == "provider:codex" }).readout(from: quotas, stale: false)
+        XCTAssertEqual(provider.fiveHour, 30)
+        XCTAssertEqual(provider.weekly, 30)
+        XCTAssertTrue(provider.fiveHourIsWeeklyCapped)
+        XCTAssertTrue(provider.tooltip(mode: .remaining, window: .fiveHour).contains("limited by weekly"))
+        let a = try XCTUnwrap(sources.first { $0.id == "account:a" }).readout(from: quotas, stale: false)
+        XCTAssertEqual(a.fiveHour, 0)
+        XCTAssertEqual(a.text(mode: .used, window: .fiveHour), "100%")
+    }
+    func testCapIsAppliedPerAccountBeforeAveraging() throws {
+        let quotas = [quota("a", five: 100, weekly: 10), quota("b", five: 10, weekly: 100)]
+        let source = try XCTUnwrap(MenuBarSource.options(from: quotas).first { $0.isProvider })
+        let result = source.readout(from: quotas, stale: false)
+        XCTAssertEqual(result.fiveHour, 10) // min(average, average) would incorrectly report 55.
+        XCTAssertEqual(result.weekly, 55)
+    }
+    func testMissingWeeklyKeepsReportedFiveHourAndIgnoresReviewPool() throws {
+        var q = quota("a", five: 75, weekly: nil)
+        q.windows.append(QuotaWindow(id: "review", label: "Code review · Weekly", remaining: 0))
+        let source = try XCTUnwrap(MenuBarSource.options(from: [q]).first)
+        let result = source.readout(from: [q], stale: false)
+        XCTAssertEqual(result.fiveHour, 75)
+        XCTAssertFalse(result.fiveHourIsWeeklyCapped)
+    }
+    func testWarningThresholdsAndMissingValues() {
+        XCTAssertEqual(TrayQuotaSeverity.forRemaining(0), .critical)
+        XCTAssertEqual(TrayQuotaSeverity.forRemaining(9.99), .critical)
+        XCTAssertEqual(TrayQuotaSeverity.forRemaining(10), .warning)
+        XCTAssertEqual(TrayQuotaSeverity.forRemaining(25), .warning)
+        XCTAssertEqual(TrayQuotaSeverity.forRemaining(25.01), .normal)
+        XCTAssertEqual(TrayQuotaSeverity.forRemaining(nil), .normal)
+        XCTAssertEqual(TrayQuotaSeverity.forRemaining(.nan), .normal)
+    }
+    func testEachPercentageHasItsOwnSeverityEvenInUsedMode() {
+        let value = MenuBarReadout(id: "x", title: "Claude", detail: "x", fiveHour: 20, weekly: 5)
+        let parts = value.parts(mode: .used, window: .both, includeSource: true)
+        XCTAssertEqual(parts.map(\.text).joined(), "Claude ⁵ʰ 80% · ʷ 95%")
+        XCTAssertEqual(parts.map(\.severity), [.normal, .normal, .warning, .normal, .critical])
+        XCTAssertEqual(value.parts(mode: .remaining, window: .weekly).first?.severity, .critical)
+    }
+
 }
