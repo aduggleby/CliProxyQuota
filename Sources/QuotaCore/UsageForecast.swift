@@ -28,7 +28,15 @@ public enum UsageForecast: Equatable, Sendable {
         case .learning: return "Learning your usage pace…"
         case .unavailable: return "Forecast waiting for fresh quota data."
         case .inTime: return "At current pace your limits will reset in time."
-        case .runsOut(let minutes): return "At current pace you will run out \(minutes)m before reset."
+        case .runsOut(let minutes):
+            let days = minutes / 1440
+            let hours = minutes % 1440 / 60
+            let remainingMinutes = minutes % 60
+            var parts: [String] = []
+            if days > 0 { parts.append("\(days)d") }
+            if hours > 0 { parts.append("\(hours)h") }
+            if remainingMinutes > 0 || parts.isEmpty { parts.append("\(remainingMinutes)m") }
+            return "At current pace you will run out \(parts.joined(separator: " ")) before reset."
         }
     }
 }
