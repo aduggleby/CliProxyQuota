@@ -187,6 +187,10 @@ Tests/QuotaCoreTests/   Parser and mocked network tests
 scripts/               Build, install, icon, and screenshot tooling
 ```
 
+## Contribution workflow
+
+Repository instructions in `AGENTS.md` require requested changes to include a README update, appropriate validation, a commit and push, and a new GitHub release with a universal app ZIP and SHA-256 checksum, unless explicitly requested otherwise. Release builds use committed source and exclude unrelated pending changes. GitHub Actions builds and tests the app; it does not publish releases automatically.
+
 ## License
 
 [MIT](LICENSE). Provider artwork is excluded; see [third-party notices](THIRD_PARTY_NOTICES.md).
